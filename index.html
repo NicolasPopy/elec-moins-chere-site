@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Comparez les offres d'électricité sur votre consommation réelle, heure par heure : un questionnaire génère un prompt pour Claude qui lit vos données Enedis et calcule l'offre la moins chère.">
+<meta name="description" content="Comparez les offres d'électricité sur votre consommation réelle : un questionnaire génère un prompt pour Claude qui lit vos mesures Enedis et calcule l'offre la moins chère aux prix actuels.">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ElecMoinsChere</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -194,24 +194,105 @@ details.tuto-d ol { margin: 10px 0 6px; padding-left: 22px; display: grid; gap: 
 details.tuto-d p { font-size: 14.5px; color: var(--muted); }
 ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template-columns: none; }
 @media (max-width: 600px) { .timeline { grid-template-columns: 1fr; } .btn.big { width: 100%; justify-content: center; } }
+/* Refonte : illustration, faits, blocs colorés, prompt mis en avant, IA */
+:root { --s1: #2F6F8F; --s1-soft: #E2EEF3; --s2: #5B7A00; --s2-soft: #EEF4C7; --s3: #A35F00; --s3-soft: #FBEEDB;
+  --art-paper: #EEF3EF; --art-ink: #15242B; --art-line: #B9C7C1; --art-linky: #C9DC3A; --art-linky-edge: #6E7E12; --art-screen: #0B171B; --art-screen-text: #C9DC3A; --art-hc: #6FB3D2; --art-hp: #C9DC3A;
+  --pz-bg: #F7FAE4; --pz-border: #8FA316; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s1: #6FB3D2; --s1-soft: #142A33; --s2: #C9DC3A; --s2-soft: #263018; --s3: #F0B45A; --s3-soft: #2E2312; --pz-bg: #1A2716; --pz-border: #C9DC3A; } }
+:root[data-theme="dark"] { --s1: #6FB3D2; --s1-soft: #142A33; --s2: #C9DC3A; --s2-soft: #263018; --s3: #F0B45A; --s3-soft: #2E2312; --pz-bg: #1A2716; --pz-border: #C9DC3A; }
+.hero .wrap.hero-grid { max-width: 1000px; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px 36px; align-items: center; }
+.hero-text { display: grid; gap: 18px; min-width: 0; }
+.hero-art { width: 100%; max-width: 330px; height: auto; display: block; }
+.prose-p { max-width: 65ch; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.fact svg { width: 26px; height: 26px; fill: none; stroke: var(--hc); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fact h3 { font-size: 17px; }
+.fact p { font-size: 15px; color: var(--muted); }
+.block { border-top: 4px solid var(--sc, var(--line)); }
+.block.s1 { --sc: var(--s1); --sc-soft: var(--s1-soft); }
+.block.s2 { --sc: var(--s2); --sc-soft: var(--s2-soft); }
+.block.s3 { --sc: var(--s3); --sc-soft: var(--s3-soft); }
+.block-head { align-items: flex-start; flex-wrap: nowrap; gap: 14px; }
+.block-head > div { display: grid; gap: 2px; min-width: 0; }
+.block-head .ico { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--sc-soft); }
+.block-head .ico svg { width: 24px; height: 24px; fill: none; stroke: var(--sc); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.block-head .n { justify-self: start; background: var(--sc-soft); color: var(--sc); font-weight: 500; }
+.bdesc { font-size: 14.5px; color: var(--muted); }
+.prompt-zone { background: var(--pz-bg); border: 2px solid var(--pz-border); border-radius: 16px; padding: 22px; display: grid; gap: 16px; box-shadow: 0 10px 30px -18px rgba(21, 36, 43, .45); }
+.pz-head { display: flex; gap: 14px; align-items: flex-start; }
+.pz-head > div { display: grid; gap: 4px; min-width: 0; }
+.pz-head h2 { font-size: clamp(25px, 4vw, 32px); }
+.pz-sub { color: var(--muted); font-size: 15.5px; }
+.pz-badge { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; }
+.pz-badge svg { width: 26px; height: 26px; fill: none; stroke: var(--on-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pz-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.copy.big { font-size: 18px; padding: 16px 28px; border-radius: 10px; box-shadow: 0 2px 0 var(--accent-ink); }
+.copy.big:hover { filter: brightness(1.05); }
+.open-claude { font-weight: 600; font-size: 16px; }
+.pz-actions .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.prompt-zone .prompt-box { background: var(--surface); }
+.prompt-zone pre#prompt-view { max-height: 300px; }
+.prompt-zone ol.steps li { border-color: var(--pz-border); }
+.ia-list { display: grid; gap: 10px; }
+.ia { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; }
+.ia.full { border-color: var(--accent-ink); }
+.ia h3 { font-size: 17px; }
+.ia p { font-size: 15px; color: var(--muted); max-width: 70ch; }
+.ia-pill { justify-self: start; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
+.ia-pill.approx { background: var(--warn-soft); color: var(--warn); }
+@media (max-width: 760px) {
+  .hero .wrap.hero-grid { grid-template-columns: 1fr; }
+  .hero-art { order: -1; max-width: 230px; margin-inline: auto; }
+  .facts { grid-template-columns: 1fr; }
+  .prompt-zone { padding: 16px; }
+  .copy.big { width: 100%; }
+}
 </style>
 
 </head>
 <body>
 <header class="hero">
-  <div class="wrap">
-    <div class="topbar"><span class="eyebrow">ElecMoinsChere</span><a class="toplink" href="prix.html">Voir les prix relevés →</a></div>
-    <h1>Quelle offre d'électricité est la moins chère <em>pour votre consommation réelle</em>&nbsp;?</h1>
-    <p class="lead">Claude recalcule votre année de consommation, heure par heure, aux prix actuels de chaque fournisseur.</p>
-    <ol class="flow" aria-label="Comment ça marche">
-      <li class="now"><b>1</b>Répondez au questionnaire</li>
-      <li><b>2</b>Copiez le prompt généré</li>
-      <li><b>3</b>Collez-le dans Claude</li>
-    </ol>
-    <div class="cta">
-      <a class="btn primary big" href="#questionnaire">Commencer le questionnaire&nbsp;→</a>
-      <span class="cta-note">2 minutes · gratuit · sans inscription</span>
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <div class="topbar"><span class="eyebrow">ElecMoinsChere</span><a class="toplink" href="prix.html">Voir les prix relevés →</a></div>
+      <h1>Quelle offre d'électricité est la moins chère <em>pour votre consommation réelle</em>&nbsp;?</h1>
+      <p class="lead">Claude reprend vos vraies mesures Enedis et les recalcule aux prix actuels de chaque fournisseur.</p>
+      <ol class="flow" aria-label="Comment ça marche">
+        <li class="now"><b>1</b>Répondez au questionnaire</li>
+        <li><b>2</b>Copiez le prompt généré</li>
+        <li><b>3</b>Collez-le dans Claude</li>
+      </ol>
+      <div class="cta">
+        <a class="btn primary big" href="#questionnaire">Commencer le questionnaire&nbsp;→</a>
+        <span class="cta-note">2 minutes · gratuit · sans inscription</span>
+      </div>
     </div>
+    <svg class="hero-art" viewBox="0 0 360 210" role="img" aria-label="Un compteur Linky affichant la consommation, une facture d'électricité et une courbe heure par heure">
+      <g transform="rotate(-7 92 105)">
+        <rect x="18" y="34" width="132" height="160" rx="6" fill="var(--art-paper)"/>
+        <rect x="32" y="50" width="58" height="9" rx="2" fill="var(--art-ink)"/>
+        <rect x="32" y="68" width="96" height="5" rx="2" fill="var(--art-line)"/>
+        <rect x="32" y="80" width="80" height="5" rx="2" fill="var(--art-line)"/>
+        <rect x="32" y="92" width="88" height="5" rx="2" fill="var(--art-line)"/>
+        <rect x="32" y="116" width="96" height="1.5" fill="var(--art-line)"/>
+        <rect x="32" y="126" width="40" height="6" rx="2" fill="var(--art-line)"/>
+        <rect x="92" y="124" width="36" height="10" rx="2" fill="var(--art-ink)"/>
+        <circle cx="62" cy="168" r="14" fill="none" stroke="var(--art-ink)" stroke-width="2.5"/>
+        <text x="62" y="174" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-weight="600" font-size="16" fill="var(--art-ink)">€</text>
+      </g>
+      <rect x="128" y="22" width="132" height="172" rx="16" fill="var(--art-linky)"/>
+      <rect x="128" y="22" width="132" height="172" rx="16" fill="none" stroke="var(--art-linky-edge)" stroke-width="2"/>
+      <rect x="144" y="42" width="100" height="48" rx="5" fill="var(--art-screen)"/>
+      <text x="152" y="60" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--art-screen-text)">HC 22H-6H</text>
+      <text x="152" y="80" font-family="IBM Plex Mono, monospace" font-size="15" fill="var(--art-screen-text)">04512 kWh</text>
+      <circle cx="176" cy="112" r="9" fill="var(--art-linky-edge)"/><text x="176" y="116.5" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="var(--art-linky)">−</text>
+      <circle cx="212" cy="112" r="9" fill="var(--art-linky-edge)"/><text x="212" y="116.5" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="var(--art-linky)">+</text>
+      <rect x="150" y="140" width="88" height="5" rx="2" fill="var(--art-linky-edge)" opacity=".55"/>
+      <rect x="150" y="152" width="62" height="5" rx="2" fill="var(--art-linky-edge)" opacity=".55"/>
+      <path d="M198 168 l-8 14 h7 l-4 10 l11 -15 h-7 l4 -9 z" fill="var(--art-linky-edge)"/>
+      <g id="hero-bars"></g>
+    </svg>
   </div>
 </header>
 
@@ -220,16 +301,33 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 
     <section id="pourquoi">
       <span class="kicker">Pourquoi c'est plus juste</span>
+      <h2>Vos vraies mesures Enedis, pas une moyenne</h2>
+      <p class="prose-p">Votre compteur Linky enregistre votre consommation toutes les 30 minutes et la transmet à Enedis. Claude récupère ces relevés réels dans votre espace Enedis, sur 12 mois, puis calcule ce que chaque heure vous aurait coûté avec chaque offre, aux prix d'aujourd'hui.</p>
+      <div class="facts">
+        <div class="fact">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M9 20V4M14 20v-7M19 20V8"/></svg>
+          <h3>17 520 relevés réels</h3>
+          <p>Une mesure par demi-heure sur un an, lue chez Enedis. Aucun profil type.</p>
+        </div>
+        <div class="fact">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg>
+          <h3>Votre créneau d'heures creuses</h3>
+          <p>Celui programmé sur votre compteur (22h-6h, 23h-7h, deux plages…), pas un créneau supposé.</p>
+        </div>
+        <div class="fact">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+          <h3>Le vrai calendrier Tempo</h3>
+          <p>Chaque heure est placée dans son jour bleu, blanc ou rouge réel.</p>
+        </div>
+      </div>
       <div class="compare">
         <div>
           <span class="tag">Comparateur habituel</span>
-          <h3>Un total annuel</h3>
-          <p>Et une part d'heures creuses supposée.</p>
+          <p>Votre total annuel, réparti selon un profil moyen. Tempo et les heures creuses sont devinés.</p>
         </div>
         <div class="ours">
           <span class="tag">ElecMoinsChere</span>
-          <h3>Vos 8 760 heures réelles</h3>
-          <p>Votre créneau d'heures creuses, vos jours Tempo, vos saisons.</p>
+          <p>Vos heures réelles. Sans accès à Enedis, Claude part de votre total annuel et l'indique : classement approximatif.</p>
         </div>
       </div>
     </section>
@@ -239,8 +337,8 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
       <h2>Votre situation</h2>
       <p class="progress" id="progress"></p>
 
-      <div class="block" id="b1">
-        <div class="block-head"><span class="n">1 / 3</span><h3>Votre logement et votre compteur</h3></div>
+      <div class="block s1" id="b1">
+        <div class="block-head"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg></span><div><span class="n">1 / 3</span><h3>Votre logement et votre compteur</h3><p class="bdesc">Pour savoir d'où viendra votre consommation.</p></div></div>
 
         <fieldset id="q-loc">
           <legend>Où se trouve le logement&nbsp;?</legend>
@@ -284,8 +382,8 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
         </fieldset>
       </div>
 
-      <div class="block" id="b2">
-        <div class="block-head"><span class="n">2 / 3</span><h3>Accès à vos données Enedis</h3></div>
+      <div class="block s2" id="b2">
+        <div class="block-head"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 16v-3M12 16V8M16 16v-5"/></svg></span><div><span class="n">2 / 3</span><h3>Accès à vos données Enedis</h3><p class="bdesc">Pour savoir si Claude peut lire vos mesures réelles.</p></div></div>
 
         <fieldset id="q-compte">
           <legend>Avez-vous un compte sur l'espace client Enedis&nbsp;?</legend>
@@ -326,15 +424,16 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
         <fieldset id="q-appareil">
           <legend>Où allez-vous lancer l'analyse&nbsp;?</legend>
           <div class="chips">
-            <label class="chip"><input type="radio" name="appareil" id="appareil-desktop" value="desktop"><span>Application Claude sur ordinateur</span></label>
-            <label class="chip"><input type="radio" name="appareil" id="appareil-web" value="web"><span>Claude sur le web ou sur mobile</span></label>
+            <label class="chip"><input type="radio" name="appareil" id="appareil-desktop" value="desktop"><span>Claude sur ordinateur, offre payante</span></label>
+            <label class="chip"><input type="radio" name="appareil" id="appareil-web" value="web"><span>Claude gratuit, ou sur le web / mobile</span></label>
+            <label class="chip"><input type="radio" name="appareil" id="appareil-autre" value="autre"><span>Une autre IA (ChatGPT, Gemini, Le Chat…)</span></label>
           </div>
-          <p class="hint">Sur ordinateur, Claude récupère vos mesures tout seul. Ailleurs, vous indiquez votre consommation annuelle (classement approximatif).</p>
+          <p class="hint">Seule l'application Claude sur ordinateur, avec une offre payante, lit vos mesures Enedis. Ailleurs, vous indiquez votre consommation annuelle (classement approximatif).</p>
         </fieldset>
       </div>
 
-      <div class="block" id="b3">
-        <div class="block-head"><span class="n" id="b3n">3 / 3</span><h3>Votre contrat</h3></div>
+      <div class="block s3" id="b3">
+        <div class="block-head"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14.5 3.5V8H19"/><path d="M9 12.5h7M9 16h7"/></svg></span><div><span class="n" id="b3n">3 / 3</span><h3>Votre contrat</h3><p class="bdesc">Pour comparer avec ce que vous payez aujourd'hui.</p></div></div>
 
         <div class="row">
           <div class="field">
@@ -403,18 +502,49 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
     </section>
 
     <section id="prompt">
-      <span class="kicker">Étapes 2 et 3 · Votre prompt</span>
-      <h2>Copiez-le, collez-le dans Claude</h2>
-      <div class="verdict" id="verdict" aria-live="polite"></div>
-      <div class="prompt-box" id="prompt-box">
-        <div class="prompt-bar">
-          <span class="meta" id="prompt-meta"></span>
-          <button class="copy" id="copy-btn" type="button">Copier le prompt</button>
+      <div class="prompt-zone">
+        <div class="pz-head">
+          <span class="pz-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg></span>
+          <div>
+            <span class="kicker">Étapes 2 et 3</span>
+            <h2>Votre prompt est prêt</h2>
+            <p class="pz-sub">Il se met à jour à chaque réponse. Copiez-le, puis collez-le dans une nouvelle conversation.</p>
+          </div>
         </div>
-        <pre id="prompt-view" tabindex="0" aria-label="Texte du prompt"></pre>
-        <button class="linkbtn" id="expand-btn" type="button">Afficher en entier</button>
+        <div class="verdict" id="verdict" aria-live="polite"></div>
+        <div class="pz-actions" id="pz-actions">
+          <button class="copy big" id="copy-btn" type="button">Copier le prompt</button>
+          <a class="open-claude" href="https://claude.ai/new" target="_blank" rel="noopener">Ouvrir Claude ↗</a>
+          <span class="meta" id="prompt-meta"></span>
+        </div>
+        <div class="prompt-box" id="prompt-box">
+          <pre id="prompt-view" tabindex="0" aria-label="Texte du prompt"></pre>
+          <button class="linkbtn" id="expand-btn" type="button">Afficher en entier</button>
+        </div>
+        <ol class="steps" id="launch"></ol>
       </div>
-      <ol class="steps" id="launch"></ol>
+    </section>
+
+    <section id="ia">
+      <span class="kicker">Avec quelle IA&nbsp;?</span>
+      <h2>Le prompt marche partout, avec plus ou moins de précision</h2>
+      <div class="ia-list">
+        <div class="ia full">
+          <span class="ia-pill">Analyse complète</span>
+          <h3>Claude sur ordinateur, offre payante</h3>
+          <p>Pro, Max, Team ou Enterprise. Claude ouvre votre espace Enedis dans son navigateur intégré et lit vos mesures heure par heure.</p>
+        </div>
+        <div class="ia">
+          <span class="ia-pill approx">Classement approximatif</span>
+          <h3>Claude gratuit</h3>
+          <p>Sur le web, le mobile ou l'ordinateur. Pas de navigateur intégré, mais la recherche web et les calculs sont inclus : il part de votre consommation annuelle. La limite de messages gratuite peut interrompre une longue analyse.</p>
+        </div>
+        <div class="ia">
+          <span class="ia-pill approx">Classement approximatif · non testé</span>
+          <h3>ChatGPT, Gemini, Le Chat, Copilot…</h3>
+          <p>Le prompt fonctionne si l'IA sait lire une page web : elle part de votre consommation annuelle. Vérifiez dans sa réponse qu'elle cite la date des prix de la base ElecMoinsChere.</p>
+        </div>
+      </div>
     </section>
 
     <section id="tempo">
@@ -480,7 +610,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 // Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
 // a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
 var EMC = (function () {
-  var VERSION = 'v7';
+  var VERSION = 'v8';
   var VERSION_DATE = '31 oct. 2026';
 
   var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
@@ -515,7 +645,7 @@ var EMC = (function () {
     linky: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' },
     compte: { oui: 'oui', non: "non, je le crée en suivant le tutoriel", annuel: "je préfère ne pas l'utiliser et indiquer ma consommation annuelle" },
     horaire: { plus12: 'oui, depuis plus de 12 mois', moins12: 'oui, depuis moins de 12 mois', non: 'non', nsp: 'je ne sais pas' },
-    appareil: { desktop: "application Claude sur ordinateur, avec le navigateur intégré", web: "Claude sur le web ou sur mobile (pas d'accès à l'espace Enedis : j'indique ma consommation annuelle)" },
+    appareil: { desktop: "application Claude sur ordinateur, avec le navigateur intégré", web: "Claude gratuit, ou sur le web ou mobile (pas d'accès à l'espace Enedis : j'indique ma consommation annuelle)", autre: "une autre IA que Claude (j'indique ma consommation annuelle)" },
     chauffage: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' }
   };
 
@@ -526,7 +656,7 @@ var EMC = (function () {
     if (a.linky === 'non') return 'factures';
     if (a.compte === 'annuel') return 'factures';
     if (!a.loc && !a.reseau && !a.linky && !a.appareil) return null;
-    if (a.appareil === 'web') return 'factures';
+    if (a.appareil === 'web' || a.appareil === 'autre') return 'factures';
     return 'enedis';
   }
 
@@ -764,7 +894,7 @@ var EMC = (function () {
       "- Autres options (Zen Flex, Eco Fixe 2 saisons…) : calcule-les avec leurs plages_horaires ; si une plage n'est pas calculable (jours Sobriété non publiés, par exemple), écarte l'offre et dis-le.",
       "- Promotions : déduis la valeur de la promotion en cours sur les 12 premiers mois (2 mois d'abonnement offerts = 2/12 de l'abonnement annuel ; un bonus de 50 € = −50 €). Si elle ne s'applique pas à moi (déjà client de ce fournisseur, par exemple), ne la déduis pas et signale-le. Le classement tient compte des promotions ; garde aussi le coût sans promotion pour la deuxième année.",
       "- Mon contrat actuel : son coût aux prix d'aujourd'hui sert de référence, jamais un montant payé dans le passé. Si je t'ai donné ce que j'ai payé, sers-t'en seulement pour contrôler la cohérence, en expliquant l'écart (prix de l'époque).",
-      "- Fais tous les calculs dans du code exécuté, jamais de tête. Regroupe d'abord la consommation en totaux par plage (total, HP/HC, Tempo par couleur et plage, OctoSaisons, semaine/week-end et kWh par jour de semaine, saisons été/hiver avec HP/HC/HSC, totaux mensuels) ; seuls ces totaux reviennent dans la conversation, puis le coût de chaque offre se calcule dans un script."
+      "- Fais tous les calculs dans du code exécuté, jamais de tête (si tu ne peux pas exécuter de code, calcule offre par offre en montrant chaque opération). Regroupe d'abord la consommation en totaux par plage (total, HP/HC, Tempo par couleur et plage, OctoSaisons, semaine/week-end et kWh par jour de semaine, saisons été/hiver avec HP/HC/HSC, totaux mensuels) ; seuls ces totaux reviennent dans la conversation, puis le coût de chaque offre se calcule dans un script."
     ].join('\n');
   }
 
@@ -1002,6 +1132,7 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var res = EMC.build(a);
     courant = res.texte;
     box.hidden = (pc === 'horszone');
+    $('pz-actions').hidden = (pc === 'horszone');
     view.textContent = courant;
     var n = Object.keys(a).length;
     $('prompt-meta').textContent = 'Version ' + EMC.VERSION + ' · ' + (n ? n + ' réponse' + (n > 1 ? 's' : '') + ' intégrée' + (n > 1 ? 's' : '') : 'version complète');
@@ -1011,7 +1142,7 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var desktop = (pc === 'enedis');
     var steps = [
       ['Copiez le prompt', 'Avec le bouton ci-dessus.'],
-      [desktop ? 'Ouvrez une nouvelle conversation dans l\'application Claude sur ordinateur' : 'Ouvrez une nouvelle conversation dans Claude', desktop ? 'Là où le navigateur intégré est disponible. Collez le prompt et envoyez.' : (pc === 'factures' ? 'Collez le prompt, joignez votre facture si vous l\'avez, et envoyez.' : 'Collez le prompt, joignez vos fichiers de consommation, et envoyez.')],
+      [desktop ? 'Ouvrez une nouvelle conversation dans l\'application Claude sur ordinateur' : (a.appareil === 'autre' ? 'Ouvrez une nouvelle conversation dans votre IA' : 'Ouvrez une nouvelle conversation dans Claude'), desktop ? 'Là où le navigateur intégré est disponible. Collez le prompt et envoyez.' : (pc === 'factures' ? 'Collez le prompt, joignez votre facture si vous l\'avez, et envoyez.' : 'Collez le prompt, joignez vos fichiers de consommation, et envoyez.')],
       ['Répondez aux questions qui manquent', 'Claude ne vous repose pas celles du questionnaire.']
     ];
     if (desktop) steps.push(['Connectez-vous à Enedis dans le panneau navigateur', 'Vous saisissez vous-même identifiant, mot de passe et code, puis vous dites à Claude que c\'est fait.']);
@@ -1071,6 +1202,17 @@ if (typeof module !== 'undefined') module.exports = EMC;
 
   rendre();
 
+  // Illustration : petite courbe d'une journée (heures creuses 22h-6h)
+  (function () {
+    var g = document.getElementById('hero-bars'); if (!g) return;
+    var k = [0.55,0.48,0.42,0.40,0.38,0.45,0.70,0.95,0.80,0.55,0.50,0.62,0.85,0.60,0.48,0.46,0.58,0.90,1.35,1.55,1.30,1.05,1.20,0.75];
+    var x0 = 270, w = 86 / 24, base = 194, h = 120, out = '';
+    for (var i = 0; i < 24; i++) {
+      var bh = k[i] / 1.6 * h, hc = (i >= 22 || i < 6);
+      out += '<rect x="' + (x0 + i * w).toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + (w - 1).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="1" fill="var(' + (hc ? '--art-hc' : '--art-hp') + ')"></rect>';
+    }
+    g.innerHTML = out;
+  })();
 })();
 </script>
 
