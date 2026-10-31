@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prix relevés ElecMoinsChere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : même identité que la page du prompt (bandeau sombre façon afficheur Linky), page plus large pour un tableau filtrable ; une ligne par offre, détails dépliables ; en cartes sur téléphone */
+:root {
+  --bg: #F3F6F2; --surface: #FFFFFF; --ink: #15242B; --muted: #55666B; --line: #D5DDD7; --row-alt: #F8FAF7;
+  --accent: #B8CC1F; --accent-ink: #4E5A00; --accent-soft: #EEF4C7;
+  --hc: #2F6F8F; --hc-soft: #E2EEF3; --warn: #9A5B00; --warn-soft: #FBF0DD; --ok: #2E7D4F; --ok-soft: #E3F2E8;
+  --hero-bg: #15242B; --hero-fg: #EEF3EF; --hero-muted: #C9D5D0; --on-accent: #15242B;
+  --tempo-bleu: #2F6FD0; --tempo-blanc: #B9C2C6; --tempo-rouge: #C8372D;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F; --row-alt: #122027;
+    --accent: #C9DC3A; --accent-ink: #D6E65A; --accent-soft: #263018;
+    --hc: #6FB3D2; --hc-soft: #142A33; --warn: #F0B45A; --warn-soft: #2E2312; --ok: #6CC793; --ok-soft: #13291D;
+    --hero-bg: #0A1316; --hero-fg: #EEF3EF; --hero-muted: #B7C5C0; --on-accent: #15242B;
+    --tempo-bleu: #6EA2F0; --tempo-blanc: #D5DCDF; --tempo-rouge: #F07468; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F; --row-alt: #122027;
+  --accent: #C9DC3A; --accent-ink: #D6E65A; --accent-soft: #263018;
+  --hc: #6FB3D2; --hc-soft: #142A33; --warn: #F0B45A; --warn-soft: #2E2312; --ok: #6CC793; --ok-soft: #13291D;
+  --hero-bg: #0A1316; --hero-fg: #EEF3EF; --hero-muted: #B7C5C0; --on-accent: #15242B;
+  --tempo-bleu: #6EA2F0; --tempo-blanc: #D5DCDF; --tempo-rouge: #F07468; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+p { margin: 0; }
+a { color: var(--accent-ink); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Bandeau */
+.hero { background: var(--hero-bg); color: var(--hero-fg); }
+.hero .wrap { padding-block: 28px 32px; display: grid; gap: 14px; }
+.nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+.back { color: var(--hero-fg); font-weight: 500; font-size: 15px; text-decoration: none; border: 1.5px solid var(--accent); border-radius: 8px; padding: 8px 14px; }
+.back:hover { background: var(--accent); color: var(--on-accent); }
+.hero h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 700; }
+.hero p.lead { max-width: 70ch; color: var(--hero-muted); font-size: 17px; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--font-mono); font-size: 13px; color: var(--hero-muted); }
+.stats b { color: var(--accent); font-weight: 500; }
+
+/* Filtres */
+main .wrap { padding-block: 24px 64px; display: grid; gap: 18px; }
+.filters { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.frow { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: end; }
+.fgroup { display: grid; gap: 6px; min-width: 0; }
+.flabel { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span { display: inline-block; padding: 6px 11px; border: 1.5px solid var(--line); border-radius: 7px; font-size: 14.5px; background: var(--bg); cursor: pointer; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.chip input:checked + span { border-color: var(--accent-ink); background: var(--accent-soft); font-weight: 600; }
+.chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chip span:hover { border-color: var(--muted); }
+input[type="search"], select { font: 400 15px var(--font-body); color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 11px; max-width: 100%; }
+input[type="search"] { width: 260px; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: 14.5px; cursor: pointer; }
+.check input { width: 17px; height: 17px; accent-color: var(--accent-ink); }
+.count { font-size: 14.5px; color: var(--muted); }
+.count b { color: var(--ink); font-weight: 600; }
+
+/* Tableau */
+.table-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+thead th { text-align: left; font-family: var(--font-mono); font-weight: 500; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 12px 12px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+thead th.num { text-align: right; }
+tbody tr.offre > td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; }
+tbody tr.offre:first-child > td { border-top: 0; }
+tbody tr.offre:nth-of-type(4n+1) > td, tbody tr.offre:nth-of-type(4n+1) + tr.detail > td { background: var(--surface); }
+.f-name { font-weight: 600; }
+.o-name { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tag.closed { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.tag.green { border-color: var(--ok); color: var(--ok); }
+.tag.alert { border-color: var(--warn); color: var(--warn); }
+.opt { font-weight: 500; white-space: nowrap; }
+.type { color: var(--muted); font-size: 13.5px; max-width: 190px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--font-mono); font-size: 14px; }
+.unit { color: var(--muted); font-size: 12px; font-family: var(--font-body); }
+.postes { margin: 0; display: grid; grid-template-columns: 8.6em 4.2em; gap: 3px 8px; font-variant-numeric: tabular-nums; }
+.postes dt { color: var(--muted); font-size: 13.5px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.postes dd { margin: 0; font-family: var(--font-mono); font-size: 14px; text-align: right; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
+.dot.bleu { background: var(--tempo-bleu); border-color: var(--tempo-bleu); }
+.dot.blanc { background: var(--tempo-blanc); }
+.dot.rouge { background: var(--tempo-rouge); border-color: var(--tempo-rouge); }
+.dot.hc { background: var(--hc); border-color: var(--hc); }
+.dot.hp { background: var(--accent); border-color: var(--accent-ink); }
+.dot.base { background: var(--line); border-color: var(--muted); }
+.promo { font-size: 13.5px; display: grid; gap: 2px; max-width: 240px; }
+.promo b { color: var(--ok); font-weight: 600; }
+.promo small { color: var(--muted); font-size: 12.5px; }
+.none { color: var(--muted); }
+.more { font: 500 13.5px var(--font-body); background: none; border: 0; padding: 4px 0 0; color: var(--accent-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+tr.detail > td { padding: 4px 12px 18px; }
+.dgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 24px; font-size: 14px; background: var(--row-alt); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.dgrid h4 { margin: 0 0 4px; font-family: var(--font-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dgrid ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.dgrid > div { min-width: 0; overflow-wrap: anywhere; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.note { border-left: 3px solid var(--hc); padding: 4px 0 4px 14px; color: var(--muted); font-size: 14.5px; max-width: 80ch; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14.5px; }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 22px 36px; font-size: 13.5px; color: var(--muted); display: grid; gap: 6px; }
+
+/* Téléphone : une carte par offre */
+@media (max-width: 780px) {
+  .table-box { overflow: visible; background: none; border: 0; }
+  table, tbody { display: block; }
+  thead { display: none; }
+  tbody tr.offre { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 0 0; padding: 14px; margin-top: 12px; }
+  tbody tr.offre > td, tbody tr.offre:nth-of-type(n) > td { display: block; padding: 0; border: 0; background: none; text-align: left; min-width: 0; }
+  tbody tr.offre > td.c-name { grid-column: 1 / -1; }
+  tbody tr.offre > td.c-kwh, tbody tr.offre > td.c-promo { grid-column: 1 / -1; }
+  tbody tr.offre > td[data-l]::before { content: attr(data-l); display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  td.num { font-size: 15px; }
+  .promo { max-width: none; }
+  tr.detail { display: block; }
+  tr.detail > td, tbody tr.offre:nth-of-type(n) + tr.detail > td { display: block; padding: 0; background: none; }
+  tr.offre + tr.detail { margin-top: -1px; }
+  tr.detail .dgrid { border-radius: 0 0 12px 12px; grid-template-columns: 1fr; }
+  tbody tr.offre:has(+ tr.detail[hidden]) { border-radius: 12px; }
+  input[type="search"] { width: 100%; }
+  .frow > .fgroup { flex: 1 1 100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="nav">
+      <a class="brand" href="index.html">ElecMoinsChere</a>
+      <a class="back" href="index.html">← Générer mon prompt</a>
+    </div>
+    <h1>Tous les prix relevés</h1>
+    <p class="lead">Abonnement et prix du kWh de chaque offre suivie par ElecMoinsChere, pour la puissance de votre compteur. Ce sont les prix que le prompt utilise pour calculer votre comparatif. Tous les montants sont TTC.</p>
+    <div class="stats" id="stats"><span>Chargement des prix…</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <div class="filters" id="filters">
+      <div class="frow">
+        <div class="fgroup">
+          <span class="flabel" id="lbl-kva">Puissance souscrite</span>
+          <div class="chips" id="kva" role="radiogroup" aria-labelledby="lbl-kva"></div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <span class="flabel" id="lbl-opt">Option</span>
+          <div class="chips" id="opts" role="radiogroup" aria-labelledby="lbl-opt"></div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <label class="flabel" for="q">Rechercher</label>
+          <input type="search" id="q" placeholder="Fournisseur ou offre">
+        </div>
+        <div class="fgroup">
+          <label class="flabel" for="sort">Trier par</label>
+          <select id="sort">
+            <option value="nom">Fournisseur (A → Z)</option>
+            <option value="abo">Abonnement le moins cher</option>
+            <option value="kwh">Prix du kWh le plus bas</option>
+            <option value="promo">Promotion la plus forte</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label class="check"><input type="checkbox" id="closed"> Inclure les offres fermées aux nouveaux clients</label>
+          <label class="check"><input type="checkbox" id="promoOnly"> Seulement avec une promotion</label>
+        </div>
+      </div>
+      <p class="count" id="count" aria-live="polite"></p>
+    </div>
+
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Fournisseur · offre</th>
+            <th scope="col">Option · type de prix</th>
+            <th scope="col" class="num">Abonnement</th>
+            <th scope="col">Prix du kWh</th>
+            <th scope="col">Promotion en cours</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="5" class="empty">Chargement des prix…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot bleu"></i>Jour bleu</span>
+      <span><i class="dot blanc"></i>Jour blanc</span>
+      <span><i class="dot rouge"></i>Jour rouge</span>
+      <span><i class="dot hp"></i>Heures pleines</span>
+      <span><i class="dot hc"></i>Heures creuses (et week-end)</span>
+      <span>HSC : heures super creuses</span>
+    </div>
+
+    <p class="note" id="avert">Prix relevés automatiquement sur les sites des fournisseurs et des comparateurs, vérifiés chaque jour. Vérifiez sur le site du fournisseur avant de souscrire. Le prix le plus bas du kWh ne suffit pas à choisir : selon vos heures de consommation, une offre plus chère sur le papier peut vous revenir moins cher. C'est ce que calcule le prompt.</p>
+
+    <div class="links">
+      <a href="https://github.com/NicolasPopy/elec-moins-chere-prix" target="_blank" rel="noopener">Base de prix sur GitHub</a>
+      <a href="https://raw.githubusercontent.com/NicolasPopy/elec-moins-chere-prix/main/data/offres.csv" target="_blank" rel="noopener">Données en CSV (Excel)</a>
+      <a href="https://github.com/NicolasPopy/elec-moins-chere-prix/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Ce qui a changé</a>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>ElecMoinsChere est un projet personnel, sans lien avec Enedis, EDF, les fournisseurs cités ni Anthropic. Ce n'est pas un conseil financier.</p>
+    <p id="src-line"></p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var LIVE = 'https://raw.githubusercontent.com/NicolasPopy/elec-moins-chere-prix/main/data/offres.json';
+  var LOCAL = 'data/offres.json';
+  var $ = function (id) { return document.getElementById(id); };
+
+  var OPT = { base: 'Base', hphc: 'Heures creuses', tempo: 'Tempo', saisons: 'Saisons', saisons_rouge: 'Saisons + jours rouges', week_end: 'Week-end', flex: 'Flex' };
+  var OPT_FILTRES = [['all', 'Toutes'], ['base', 'Base'], ['hphc', 'Heures creuses'], ['tempo', 'Tempo'], ['saisons', 'Saisons'], ['week_end', 'Week-end'], ['flex', 'Flex']];
+  var TYPE = { reglemente: 'Tarif réglementé', indexe_trv: 'Indexé sur le tarif réglementé', fixe: 'Prix fixe', variable: 'Prix variable' };
+  var FIAB = { confirme: 'Prix confirmé par au moins deux sources', source_unique: 'Prix trouvé sur une seule source', conflit: 'Les sources divergent (voir les notes)' };
+  var POSTE = {
+    base: ['Base', 'base'], hp: ['Heures pleines', 'hp'], hc: ['Heures creuses', 'hc'],
+    bleu_hp: ['Bleu HP', 'bleu'], bleu_hc: ['Bleu HC', 'bleu'], blanc_hp: ['Blanc HP', 'blanc'], blanc_hc: ['Blanc HC', 'blanc'], rouge_hp: ['Rouge HP', 'rouge'], rouge_hc: ['Rouge HC', 'rouge'],
+    ete_hp: ['Été HP', 'hp'], ete_hc: ['Été HC', 'hc'], ete_hsc: ['Été HSC', 'hc'], hiver_hp: ['Hiver HP', 'hp'], hiver_hc: ['Hiver HC', 'hc'], hiver_hsc: ['Hiver HSC', 'hc'],
+    ete: ['Été', 'base'], hiver: ['Hiver', 'base'], semaine: ['Semaine', 'base'], week_end: ['Week-end', 'hc'],
+    eco_hp: ['Éco HP', 'hp'], eco_hc: ['Éco HC', 'hc'], sobriete_hp: ['Sobriété HP', 'rouge'], sobriete_hc: ['Sobriété HC', 'rouge']
+  };
+  var ORDRE = Object.keys(POSTE);
+
+  var D = null, FOURN = {}, etat = { kva: 6, opt: 'all', q: '', sort: 'nom', closed: false, promoOnly: false }, ouverts = {};
+  var today = new Date().toISOString().slice(0, 10);
+
+  function eur(v, dec) { return v == null ? '–' : v.toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + ' €'; }
+  function frDate(s) { if (!s) return ''; var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  // Puissance déjà choisie dans le questionnaire de la page principale (même site), sinon dernière choisie ici
+  try {
+    var mem = JSON.parse(localStorage.getItem('emc-prix') || 'null');
+    var rep = JSON.parse(localStorage.getItem('emc-reponses-v5') || 'null');
+    if (rep && /^\d+$/.test(rep.kva || '')) etat.kva = +rep.kva;
+    else if (mem && mem.kva) etat.kva = mem.kva;
+  } catch (e) {}
+
+  function charger() {
+    return fetch(LIVE, { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { return { d: d, live: true }; })
+      .catch(function () { return fetch(LOCAL).then(function (r) { return r.json(); }).then(function (d) { return { d: d, live: false }; }); });
+  }
+
+  function promosActives(o) {
+    return (o.promotions || []).filter(function (p) { return !p.date_fin || p.date_fin >= today; });
+  }
+  function valeurPromo(p, ligne) {
+    var v = p.valeur_an1_eur || 0;
+    if (p.mois_abonnement_offerts && ligne && ligne.abonnement_mois != null) v += p.mois_abonnement_offerts * ligne.abonnement_mois;
+    return v;
+  }
+  function kwhPrincipal(l) {
+    var pk = l.prix_kwh || {}, k = ['base', 'hp', 'semaine', 'bleu_hp', 'hiver_hp', 'eco_hp', 'hiver'];
+    for (var i = 0; i < k.length; i++) if (pk[k[i]] != null) return pk[k[i]];
+    var vals = Object.keys(pk).map(function (x) { return pk[x]; }).filter(function (x) { return x != null; });
+    return vals.length ? Math.min.apply(null, vals) : Infinity;
+  }
+
+  function lignes() {
+    var out = [], horsPuissance = 0, fermees = 0;
+    D.offres.forEach(function (o) {
+      var l = (o.grille || []).filter(function (g) { return g.kva === etat.kva; })[0];
+      if (!l) { horsPuissance++; return; }
+      var ferme = l.ouvert_nouveaux_clients === false || o.ouvert_nouveaux_clients === false;
+      if (ferme && !etat.closed) { fermees++; return; }
+      if (etat.opt !== 'all') {
+        var op = o.option === 'saisons_rouge' ? 'saisons' : o.option;
+        if (op !== etat.opt) return;
+      }
+      var f = FOURN[o.fournisseur] || { nom: o.fournisseur };
+      if (etat.q && norm(f.nom + ' ' + o.offre + ' ' + (OPT[o.option] || '')).indexOf(norm(etat.q)) < 0) return;
+      var pr = promosActives(o);
+      var pv = pr.reduce(function (s, p) { return s + valeurPromo(p, l); }, 0);
+      if (etat.promoOnly && !pr.length) return;
+      out.push({ o: o, l: l, f: f, ferme: ferme, promos: pr, promoVal: pv });
+    });
+    var cmp = {
+      nom: function (a, b) { return a.f.nom.localeCompare(b.f.nom, 'fr') || a.o.offre.localeCompare(b.o.offre, 'fr') || (a.o.option > b.o.option ? 1 : -1); },
+      abo: function (a, b) { return (a.l.abonnement_mois == null ? 1e9 : a.l.abonnement_mois) - (b.l.abonnement_mois == null ? 1e9 : b.l.abonnement_mois); },
+      kwh: function (a, b) { return kwhPrincipal(a.l) - kwhPrincipal(b.l); },
+      promo: function (a, b) { return b.promoVal - a.promoVal || cmp.nom(a, b); }
+    };
+    out.sort(cmp[etat.sort]);
+    return { rows: out, horsPuissance: horsPuissance, fermees: fermees };
+  }
+
+  function cellPostes(l) {
+    var dl = el('dl', 'postes'), pk = l.prix_kwh || {};
+    ORDRE.concat(Object.keys(pk).filter(function (k) { return ORDRE.indexOf(k) < 0; })).forEach(function (k) {
+      if (pk[k] == null) return;
+      var def = POSTE[k] || [k, 'base'];
+      var dt = el('dt'); dt.title = (D.meta.postes && D.meta.postes[k]) || k;
+      if (def[1]) dt.appendChild(el('i', 'dot ' + def[1]));
+      dt.appendChild(document.createTextNode(def[0]));
+      dl.appendChild(dt);
+      dl.appendChild(el('dd', null, pk[k].toLocaleString('fr-FR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })));
+    });
+    return dl;
+  }
+
+  function detail(r) {
+    var o = r.o, g = el('div', 'dgrid');
+    function bloc(titre, contenu) {
+      if (!contenu || (Array.isArray(contenu) && !contenu.length)) return;
+      var d = el('div'); d.appendChild(el('h4', null, titre));
+      if (Array.isArray(contenu)) { var ul = el('ul'); contenu.forEach(function (x) { if (typeof x === 'string') ul.appendChild(el('li', null, x)); else ul.appendChild(x); }); d.appendChild(ul); }
+      else d.appendChild(typeof contenu === 'string' ? el('p', null, contenu) : contenu);
+      g.appendChild(d);
+    }
+    var prix = [TYPE[o.type_prix] || o.type_prix];
+    if (o.duree_prix_garanti_mois) prix.push('Prix garanti ' + o.duree_prix_garanti_mois + ' mois');
+    if (o.indexation) prix.push(o.indexation);
+    prix.push(o.engagement ? o.engagement.charAt(0).toUpperCase() + o.engagement.slice(1) : '');
+    bloc('Prix et contrat', prix.filter(Boolean));
+    bloc('Quand s\'appliquent les prix', o.plages_horaires || (o.option === 'base' ? 'Même prix à toute heure.' : ''));
+    if (o.energie_verte) bloc('Origine de l\'électricité', (o.energie_verte.niveau === 'premium' ? 'Verte premium. ' : '') + (o.energie_verte.detail || ''));
+    if (r.promos.length) bloc('Promotion', r.promos.map(function (p) {
+      return p.description + (p.conditions ? ' — ' + p.conditions : '') + (p.date_fin ? ' Jusqu\'au ' + frDate(p.date_fin) + '.' : '');
+    }));
+    bloc('Avantages', o.avantages || []);
+    bloc('Notes', (o.mentions || []).concat(o.notes || []));
+    var src = (o.sources || []).map(function (s) {
+      var li = el('li'), a = el('a', null, (s.url || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0]);
+      a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
+      li.appendChild(a);
+      li.appendChild(document.createTextNode(' · ' + (s.type || '') + (s.consulte_le ? ', ' + frDate(s.consulte_le) : '')));
+      return li;
+    });
+    if (FIAB[o.verification]) src.unshift(el('li', null, FIAB[o.verification]));
+    bloc('Sources' + (o.derniere_verif ? ' (vérifié le ' + frDate(o.derniere_verif) + ')' : ''), src);
+    return g;
+  }
+
+  function rendre() {
+    var res = lignes(), tb = $('rows');
+    tb.innerHTML = '';
+    res.rows.forEach(function (r) {
+      var o = r.o, tr = el('tr', 'offre');
+
+      var c1 = el('td', 'c-name');
+      c1.appendChild(el('div', 'f-name', r.f.nom));
+      c1.appendChild(el('div', 'o-name', o.offre));
+      var tags = el('div', 'tags');
+      if (r.ferme) tags.appendChild(el('span', 'tag closed', 'Fermée aux nouveaux clients'));
+      if (o.energie_verte && o.energie_verte.niveau === 'premium') tags.appendChild(el('span', 'tag green', 'Verte premium'));
+      (o.mentions || []).forEach(function (m) { tags.appendChild(el('span', 'tag alert', m)); });
+      if (tags.childNodes.length) c1.appendChild(tags);
+      var btn = el('button', 'more', ouverts[o.id] ? 'Masquer les détails' : 'Détails et sources');
+      btn.type = 'button'; btn.setAttribute('aria-expanded', ouverts[o.id] ? 'true' : 'false');
+      c1.appendChild(btn);
+      tr.appendChild(c1);
+
+      var c2 = el('td'); c2.setAttribute('data-l', 'Option'); c2.appendChild(el('div', 'opt', OPT[o.option] || o.option));
+      c2.appendChild(el('div', 'type', (TYPE[o.type_prix] || o.type_prix) + (o.duree_prix_garanti_mois ? ' · ' + o.duree_prix_garanti_mois + ' mois' : '')));
+      tr.appendChild(c2);
+      var c4 = el('td', 'num'); c4.setAttribute('data-l', 'Abonnement');
+      if (r.l.abonnement_mois == null) c4.appendChild(el('span', 'none', 'Non publié'));
+      else { c4.appendChild(document.createTextNode(eur(r.l.abonnement_mois, 2))); c4.appendChild(el('span', 'unit', ' /mois')); }
+      tr.appendChild(c4);
+      var c5 = el('td', 'c-kwh'); c5.setAttribute('data-l', 'Prix du kWh (€ TTC)'); c5.appendChild(cellPostes(r.l)); tr.appendChild(c5);
+      var c6 = el('td', 'c-promo'); c6.setAttribute('data-l', 'Promotion en cours');
+      if (r.promos.length) {
+        var pd = el('div', 'promo');
+        r.promos.forEach(function (p) {
+          var v = valeurPromo(p, r.l);
+          if (v) pd.appendChild(el('b', null, '≈ ' + eur(Math.round(v), 0) + ' la 1re année'));
+          pd.appendChild(el('span', null, p.description));
+          var sm = [p.nouveaux_clients ? 'Nouveaux clients' : '', p.date_fin ? 'jusqu\'au ' + frDate(p.date_fin) : ''].filter(Boolean).join(', ');
+          if (sm) pd.appendChild(el('small', null, sm));
+        });
+        c6.appendChild(pd);
+      } else c6.appendChild(el('span', 'none', '–'));
+      tr.appendChild(c6);
+      tb.appendChild(tr);
+
+      var trd = el('tr', 'detail'), td = el('td'); td.colSpan = 5;
+      td.appendChild(detail(r)); trd.appendChild(td); trd.hidden = !ouverts[o.id];
+      tb.appendChild(trd);
+      btn.addEventListener('click', function () {
+        ouverts[o.id] = !ouverts[o.id]; trd.hidden = !ouverts[o.id];
+        btn.textContent = ouverts[o.id] ? 'Masquer les détails' : 'Détails et sources';
+        btn.setAttribute('aria-expanded', ouverts[o.id] ? 'true' : 'false');
+      });
+    });
+    if (!res.rows.length) { var tr0 = el('tr'), td0 = el('td', 'empty', 'Aucune offre ne correspond à ces filtres.'); td0.colSpan = 5; tr0.appendChild(td0); tb.appendChild(tr0); }
+
+    var c = $('count'); c.innerHTML = '';
+    var b = el('b', null, res.rows.length + ' offre' + (res.rows.length > 1 ? 's' : ''));
+    c.appendChild(b);
+    var extra = ' en ' + etat.kva + ' kVA';
+    var bits = [];
+    if (res.fermees) bits.push(res.fermees + ' fermée' + (res.fermees > 1 ? 's' : '') + ' aux nouveaux clients masquée' + (res.fermees > 1 ? 's' : ''));
+    if (res.horsPuissance) bits.push(res.horsPuissance + ' non proposée' + (res.horsPuissance > 1 ? 's' : '') + ' dans cette puissance');
+    c.appendChild(document.createTextNode(extra + (bits.length ? ' · ' + bits.join(' · ') : '')));
+    try { localStorage.setItem('emc-prix', JSON.stringify({ kva: etat.kva })); } catch (e) {}
+  }
+
+  function chips(box, name, items, cur, onPick) {
+    items.forEach(function (it) {
+      var l = el('label', 'chip'), i = el('input'), s = el('span', null, it[1]);
+      i.type = 'radio'; i.name = name; i.id = name + '-' + it[0]; i.value = it[0]; i.checked = String(it[0]) === String(cur);
+      i.addEventListener('change', function () { onPick(it[0]); });
+      l.appendChild(i); l.appendChild(s); box.appendChild(l);
+    });
+  }
+
+  charger().then(function (res) {
+    D = res.d;
+    D.fournisseurs.forEach(function (f) { FOURN[f.id] = f; });
+    var kvas = D.meta.puissances_kva || [3, 6, 9, 12, 15, 18, 24, 30, 36];
+    if (kvas.indexOf(etat.kva) < 0) etat.kva = 6;
+    chips($('kva'), 'kva', kvas.map(function (k) { return [k, k + ' kVA']; }), etat.kva, function (v) { etat.kva = v; rendre(); });
+    chips($('opts'), 'opt', OPT_FILTRES, etat.opt, function (v) { etat.opt = v; rendre(); });
+    $('q').addEventListener('input', function (e) { etat.q = e.target.value.trim(); rendre(); });
+    $('sort').addEventListener('change', function (e) { etat.sort = e.target.value; rendre(); });
+    $('closed').addEventListener('change', function (e) { etat.closed = e.target.checked; rendre(); });
+    $('promoOnly').addEventListener('change', function (e) { etat.promoOnly = e.target.checked; rendre(); });
+
+    var nf = D.fournisseurs.filter(function (f) { return D.offres.some(function (o) { return o.fournisseur === f.id; }); }).length;
+    var st = $('stats'); st.innerHTML = '';
+    [['Prix du', frDate(D.meta.mis_a_jour_le)], ['', D.offres.length + ' offres'], ['', nf + ' fournisseurs'], ['', 'France continentale'], ['', 'Montants TTC']].forEach(function (x) {
+      var s = el('span'); if (x[0]) s.appendChild(document.createTextNode(x[0] + ' ')); s.appendChild(el('b', null, x[1])); st.appendChild(s);
+    });
+    $('src-line').textContent = res.live
+      ? 'Prix lus en direct dans la base ElecMoinsChere, mise à jour chaque jour.'
+      : 'Copie de la base ElecMoinsChere du ' + frDate(D.meta.mis_a_jour_le) + '. La version en ligne est mise à jour chaque jour sur GitHub.';
+    rendre();
+  }).catch(function () {
+    $('rows').innerHTML = '';
+    var tr = el('tr'), td = el('td', 'empty', 'Impossible de charger les prix pour le moment. Consultez la base directement sur GitHub.'); td.colSpan = 5; tr.appendChild(td); $('rows').appendChild(tr);
+    $('stats').textContent = '';
+  });
+})();
+</script>
+</body>
+</html>

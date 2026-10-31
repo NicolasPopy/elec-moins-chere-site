@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Comparez les offres d'électricité sur votre consommation réelle, heure par heure : un questionnaire génère un prompt pour Claude qui lit vos données Enedis et calcule l'offre la moins chère.">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ElecMoinsChere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : une colonne de lecture ; bandeau sombre façon afficheur Linky ; questionnaire en trois blocs, puis le prompt généré */
+:root {
+  --bg: #F3F6F2;
+  --surface: #FFFFFF;
+  --ink: #15242B;
+  --muted: #55666B;
+  --line: #D5DDD7;
+  --accent: #B8CC1F;
+  --accent-ink: #4E5A00;
+  --accent-soft: #EEF4C7;
+  --hc: #2F6F8F;
+  --hc-soft: #E2EEF3;
+  --warn: #9A5B00;
+  --warn-soft: #FBF0DD;
+  --hero-bg: #15242B;
+  --hero-fg: #EEF3EF;
+  --hero-muted: #C9D5D0;
+  --meter-bg: #0B171B;
+  --meter-line: #2C4048;
+  --meter-text: #9DB0AA;
+  --code-bg: #EAF0EC;
+  --ok: #2E7D4F;
+  --on-accent: #15242B;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F;
+    --accent: #C9DC3A; --accent-ink: #D6E65A; --accent-soft: #263018; --hc: #6FB3D2; --hc-soft: #142A33;
+    --warn: #F0B45A; --warn-soft: #2E2312;
+    --hero-bg: #0A1316; --hero-fg: #EEF3EF; --hero-muted: #B7C5C0; --meter-bg: #071013; --meter-line: #24363D; --meter-text: #8FA39D;
+    --code-bg: #111E23; --ok: #6CC793; --on-accent: #15242B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F;
+  --accent: #C9DC3A; --accent-ink: #D6E65A; --accent-soft: #263018; --hc: #6FB3D2; --hc-soft: #142A33;
+  --warn: #F0B45A; --warn-soft: #2E2312;
+  --hero-bg: #0A1316; --hero-fg: #EEF3EF; --hero-muted: #B7C5C0; --meter-bg: #071013; --meter-line: #24363D; --meter-text: #8FA39D;
+  --code-bg: #111E23; --ok: #6CC793; --on-accent: #15242B; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: 780px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+p { margin: 0; }
+a { color: var(--accent-ink); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Hero */
+.hero { background: var(--hero-bg); color: var(--hero-fg); }
+.hero .wrap { padding-block: 48px 40px; display: grid; gap: 20px; }
+.eyebrow { font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.hero h1 { font-size: clamp(30px, 6vw, 48px); font-weight: 700; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p.lead { font-size: 18px; max-width: 60ch; color: var(--hero-muted); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { font: 600 16px/1 var(--font-body); padding: 14px 20px; border-radius: 8px; cursor: pointer; border: 2px solid var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.ghost { background: transparent; color: var(--hero-fg); }
+.meter { border: 1px solid var(--meter-line); border-radius: 10px; padding: 14px 16px 10px; background: var(--meter-bg); max-width: 100%; }
+.meter-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 12px; color: var(--meter-text); letter-spacing: .04em; }
+.meter-head b { color: var(--accent); font-weight: 500; }
+.meter svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+
+/* Sections */
+main .wrap { padding-block: 8px 64px; }
+section { padding-block: 44px 0; display: grid; gap: 16px; }
+section > h2 { font-size: clamp(25px, 4vw, 32px); font-weight: 700; }
+.kicker { font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.prose { display: grid; gap: 14px; max-width: 65ch; }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.compare > div { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--surface); display: grid; gap: 6px; min-width: 0; }
+.compare h3 { font-size: 17px; font-family: var(--font-body); font-weight: 600; }
+.compare .tag { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.compare .ours { border-color: var(--accent); }
+.compare .ours .tag { color: var(--accent-ink); }
+.compare p { font-size: 15px; color: var(--muted); }
+
+/* Questionnaire */
+.block { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 20px; display: grid; gap: 22px; min-width: 0; }
+.block-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.block-head .n { font-family: var(--font-mono); font-size: 13px; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 8px; border-radius: 4px; }
+.block-head h3 { font-size: 21px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+legend { font-weight: 600; padding: 0; margin-bottom: 10px; font-size: 17px; }
+.hint { font-size: 14.5px; color: var(--muted); max-width: 65ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span { display: inline-block; padding: 9px 14px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 15.5px; background: var(--bg); cursor: pointer; line-height: 1.3; }
+.chip input:checked + span { border-color: var(--accent-ink); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chip span:hover { border-color: var(--muted); }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label { font-weight: 600; font-size: 17px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.row .field { flex: 1 1 200px; }
+select, input[type="text"], input[type="number"], input[type="date"], input[type="month"] {
+  font: 400 16px var(--font-body); color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; padding: 9px 12px; width: 100%; max-width: 100%;
+}
+.callout { border-radius: 10px; padding: 14px 16px; font-size: 15.5px; display: grid; gap: 8px; min-width: 0; }
+.callout.info { background: var(--hc-soft); border-left: 3px solid var(--hc); }
+.callout.warn { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+.callout strong { font-weight: 600; }
+.callout ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+.callout a { font-weight: 500; }
+
+/* Parcours et prompt */
+.verdict { border: 2px solid var(--accent); border-radius: 12px; background: var(--surface); padding: 18px 20px; display: grid; gap: 8px; }
+.verdict .pill { justify-self: start; font-family: var(--font-mono); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
+.verdict .pill.est { background: var(--warn-soft); color: var(--warn); }
+.verdict .pill.stop { background: var(--warn-soft); color: var(--warn); }
+.verdict h3 { font-size: 21px; }
+.verdict p { color: var(--muted); font-size: 16px; }
+.verdict ul { margin: 0; padding-left: 20px; font-size: 16px; display: grid; gap: 4px; }
+.progress { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.prompt-box { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.prompt-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.prompt-bar .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.copy { font: 600 15px/1 var(--font-body); padding: 10px 16px; border-radius: 8px; border: 0; cursor: pointer; background: var(--accent); color: var(--on-accent); }
+.copy[data-done="1"] { background: var(--ok); color: var(--surface); }
+pre#prompt-view { margin: 0; padding: 16px; max-height: 420px; overflow: auto; background: var(--code-bg); font-family: var(--font-mono); font-size: 13px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.linkbtn { font: 500 14.5px var(--font-body); background: none; border: 0; color: var(--accent-ink); cursor: pointer; padding: 10px 16px; text-decoration: underline; text-underline-offset: 3px; }
+
+ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding-block: 12px; border-top: 1px solid var(--line); }
+ol.steps li:last-child { border-bottom: 1px solid var(--line); }
+ol.steps li::before { content: counter(s); font-family: var(--font-display); font-weight: 700; font-size: 20px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
+ol.steps li > div { min-width: 0; display: grid; gap: 2px; }
+ol.steps strong { font-weight: 600; }
+ol.steps p { color: var(--muted); font-size: 15.5px; }
+
+.tutos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tuto { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.tuto h3 { font-size: 18px; }
+.tuto ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15.5px; }
+.tuto p { font-size: 15px; color: var(--muted); }
+.guard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
+.guard p { font-size: 16px; }
+.guard p b { font-weight: 600; }
+.note { border-left: 3px solid var(--hc); padding: 4px 0 4px 16px; color: var(--muted); font-size: 15.5px; max-width: 65ch; }
+.reset { justify-self: start; font: 500 14.5px var(--font-body); background: none; border: 1.5px solid var(--line); color: var(--muted); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+
+@media (max-width: 600px) {
+  .compare, .guard, .tutos { grid-template-columns: 1fr; }
+  body { font-size: 16px; }
+  .block { padding: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .meter .bar { transform-origin: bottom; animation: rise .7s ease-out both; }
+  @keyframes rise { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+}
+</style>
+
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">ElecMoinsChere · prompt Claude</span>
+    <h1>Quelle offre d'électricité est la moins chère <em>pour votre consommation réelle</em>&nbsp;?</h1>
+    <p class="lead">Répondez à quelques questions sur votre logement, votre compteur et votre contrat. La page fabrique un prompt adapté à votre situation. Collez-le dans Claude : il récupère votre consommation, la recalcule aux prix actuels de chaque fournisseur et vous dit lequel est le moins cher.</p>
+    <div class="cta">
+      <a class="btn primary" href="#questionnaire">Commencer le questionnaire</a>
+      <a class="btn ghost" href="#tutoriels">Tutoriels Enedis</a>
+      <a class="btn ghost" href="prix.html">Tous les prix relevés</a>
+    </div>
+    <div class="meter" aria-label="Exemple de profil de consommation sur une journée, heure par heure">
+      <div class="meter-head"><span>EXEMPLE · UNE JOURNÉE · kWh PAR HEURE</span><span>HC 22h–6h · <b>26 % en heures creuses</b></span></div>
+      <svg id="curve" viewBox="0 0 480 120" role="img" aria-label="24 barres, plus hautes le soir et la nuit"></svg>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section id="pourquoi">
+      <span class="kicker">Pourquoi</span>
+      <h2>Les comparateurs classiques devinent votre profil</h2>
+      <div class="compare">
+        <div>
+          <span class="tag">Comparateur habituel</span>
+          <h3>Un total annuel et une hypothèse</h3>
+          <p>Vous indiquez vos kWh de l'année. Le site suppose une part d'heures creuses standard et ignore à quels jours vous consommez.</p>
+        </div>
+        <div class="ours">
+          <span class="tag">ElecMoinsChere</span>
+          <h3>8 760 heures réelles</h3>
+          <p>Votre vrai créneau d'heures creuses, vos jours bleus, blancs et rouges, vos saisons. Tempo peut être très rentable ou très coûteux selon ces détails.</p>
+        </div>
+      </div>
+      <p class="note">Pas de compteur Linky, ou consommation horaire pas encore activée&nbsp;? Le questionnaire vous propose quand même une analyse estimée, et vous explique comment obtenir la version complète.</p>
+    </section>
+
+    <section id="questionnaire">
+      <span class="kicker">Questionnaire</span>
+      <h2>Votre situation, en trois blocs</h2>
+      <p class="progress" id="progress"></p>
+
+      <div class="block" id="b1">
+        <div class="block-head"><span class="n">1 / 3</span><h3>Votre logement et votre compteur</h3></div>
+
+        <fieldset id="q-loc">
+          <legend>Où se trouve le logement&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="loc" id="loc-metro" value="metro"><span>France métropolitaine continentale</span></label>
+            <label class="chip"><input type="radio" name="loc" id="loc-corse" value="corse"><span>Corse</span></label>
+            <label class="chip"><input type="radio" name="loc" id="loc-dom" value="dom"><span>Outre-mer</span></label>
+          </div>
+          <div class="callout warn" data-show="loc=corse|dom"><p><strong>Ce comparatif ne couvre pas votre territoire.</strong> En Corse et outre-mer, le réseau est géré par EDF SEI et le tarif réglementé d'EDF est l'offre de référence ; la base de prix ElecMoinsChere ne couvre que la France continentale.</p></div>
+        </fieldset>
+
+        <fieldset id="q-reseau">
+          <legend>Qui gère votre réseau électrique&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="reseau" id="reseau-enedis" value="enedis"><span>Enedis</span></label>
+            <label class="chip"><input type="radio" name="reseau" id="reseau-eld" value="eld"><span>Une entreprise locale</span></label>
+            <label class="chip"><input type="radio" name="reseau" id="reseau-nsp" value="nsp"><span>Je ne sais pas</span></label>
+          </div>
+          <p class="hint" id="tuto-reseau"></p>
+        </fieldset>
+
+        <fieldset id="q-eld" data-show="reseau=eld">
+          <legend>L'espace client de votre gestionnaire permet-il de télécharger votre consommation heure par heure&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="eld_export" id="eld-oui" value="oui"><span>Oui</span></label>
+            <label class="chip"><input type="radio" name="eld_export" id="eld-non" value="non"><span>Non</span></label>
+            <label class="chip"><input type="radio" name="eld_export" id="eld-nsp" value="nsp"><span>Je ne sais pas</span></label>
+          </div>
+          <p class="hint">Cherchez une rubrique « consommation », « mesures » ou « courbe de charge » dans l'espace client de votre gestionnaire (pas celui de votre fournisseur). Sans export horaire, l'analyse sera estimée à partir de vos factures.</p>
+        </fieldset>
+
+        <fieldset id="q-linky">
+          <legend>Avez-vous un compteur Linky&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="linky" id="linky-oui" value="oui"><span>Oui</span></label>
+            <label class="chip"><input type="radio" name="linky" id="linky-non" value="non"><span>Non</span></label>
+            <label class="chip"><input type="radio" name="linky" id="linky-nsp" value="nsp"><span>Je ne sais pas</span></label>
+          </div>
+          <p class="hint" id="tuto-linky"></p>
+          <div class="callout info" data-show="linky=non"><p>Sans Linky, il n'y a pas de consommation heure par heure. L'analyse sera <strong>estimée à partir de vos factures</strong> : fiable pour les offres Base et heures creuses, beaucoup moins pour Tempo. Le Linky se demande gratuitement à Enedis.</p></div>
+        </fieldset>
+      </div>
+
+      <div class="block" id="b2">
+        <div class="block-head"><span class="n">2 / 3</span><h3>Accès à vos données Enedis</h3></div>
+
+        <fieldset id="q-compte">
+          <legend>Avez-vous un compte sur l'espace client Enedis&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="compte" id="compte-oui" value="oui"><span>Oui</span></label>
+            <label class="chip"><input type="radio" name="compte" id="compte-non" value="non"><span>Non</span></label>
+          </div>
+          <p class="hint">C'est mon-compte-particulier.enedis.fr, différent de l'espace client de votre fournisseur. Gratuit, il ne change rien à votre contrat.</p>
+          <div class="callout info" data-show="compte=non">
+            <p><strong>Créez votre compte (5 minutes)</strong></p>
+            <ol class="tuto-inscription"></ol>
+            <p class="tuto-prm"></p>
+          </div>
+        </fieldset>
+
+        <fieldset id="q-horaire">
+          <legend>La consommation heure par heure est-elle activée dans votre espace Enedis&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="horaire" id="horaire-plus12" value="plus12"><span>Oui, depuis plus de 12 mois</span></label>
+            <label class="chip"><input type="radio" name="horaire" id="horaire-moins12" value="moins12"><span>Oui, depuis moins de 12 mois</span></label>
+            <label class="chip"><input type="radio" name="horaire" id="horaire-non" value="non"><span>Non</span></label>
+            <label class="chip"><input type="radio" name="horaire" id="horaire-nsp" value="nsp"><span>Je ne sais pas</span></label>
+          </div>
+          <p class="hint" id="tuto-verif"></p>
+          <div class="field" data-show="horaire=moins12">
+            <label for="activation">Activée depuis (environ)</label>
+            <input type="month" id="activation" name="activation">
+          </div>
+          <div class="callout warn" data-show="horaire=non">
+            <p><strong>Activez-la aujourd'hui pour la prochaine fois</strong></p>
+            <ol class="tuto-activation"></ol>
+          </div>
+          <div class="callout info" data-show="horaire=nsp"><p>Pas de souci : Claude testera vos données et choisira tout seul entre l'analyse complète, partielle ou estimée.</p></div>
+        </fieldset>
+
+        <fieldset id="q-appareil">
+          <legend>Où allez-vous lancer l'analyse&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="appareil" id="appareil-desktop" value="desktop"><span>Application Claude sur ordinateur</span></label>
+            <label class="chip"><input type="radio" name="appareil" id="appareil-web" value="web"><span>Claude sur le web ou sur mobile</span></label>
+          </div>
+          <p class="hint">Sur ordinateur, Claude ouvre votre espace Enedis dans le navigateur intégré de l'application et récupère tout seul vos mesures. Ailleurs, vous téléchargez vos données sur le site Enedis et vous joignez les fichiers à la conversation.</p>
+        </fieldset>
+      </div>
+
+      <div class="block" id="b3">
+        <div class="block-head"><span class="n" id="b3n">3 / 3</span><h3>Votre contrat</h3></div>
+
+        <div class="row">
+          <div class="field">
+            <label for="kva">Puissance souscrite</label>
+            <select id="kva" name="kva">
+              <option value="">Choisir…</option>
+              <option value="3">3 kVA</option><option value="6">6 kVA</option><option value="9">9 kVA</option><option value="12">12 kVA</option>
+              <option value="15">15 kVA</option><option value="18">18 kVA</option><option value="24">24 kVA</option><option value="30">30 kVA</option><option value="36">36 kVA</option>
+              <option value="nsp">Je ne sais pas</option>
+            </select>
+            <p class="hint">Sur votre facture, ligne « puissance souscrite ».</p>
+          </div>
+          <div class="field">
+            <label for="fournisseur">Fournisseur actuel</label>
+            <select id="fournisseur" name="fournisseur"></select>
+            <input type="text" id="fournisseur_autre" name="fournisseur_autre" placeholder="Nom du fournisseur" aria-label="Nom du fournisseur" data-show="fournisseur=__autre">
+          </div>
+        </div>
+
+        <div class="field" data-show="fournisseur!=">
+          <label for="offre">Offre actuelle</label>
+          <select id="offre" name="offre"></select>
+          <input type="text" id="offre_autre" name="offre_autre" placeholder="Nom de l'offre et option (Base, HP/HC…)" aria-label="Nom de l'offre" data-show="offre=__autre">
+        </div>
+
+        <fieldset id="q-periode">
+          <legend>Période à analyser (12 mois)</legend>
+          <div class="chips" id="periodes"></div>
+          <div class="row" data-show="periode=perso">
+            <div class="field"><label for="debut">Début</label><input type="date" id="debut" name="debut"></div>
+            <div class="field"><label for="fin">Fin</label><input type="date" id="fin" name="fin"></div>
+          </div>
+          <p class="hint" id="periode-hint">Enedis conserve la consommation horaire environ 2 ans. 12 mois couvrent l'hiver et l'été.</p>
+        </fieldset>
+
+        <fieldset id="q-chauffage" data-show="estime=1">
+          <legend>Chauffage électrique&nbsp;?</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="chauffage" id="ch-oui" value="oui"><span>Oui</span></label>
+            <label class="chip"><input type="radio" name="chauffage" id="ch-non" value="non"><span>Non</span></label>
+            <label class="chip"><input type="radio" name="chauffage" id="ch-nsp" value="nsp"><span>Je ne sais pas</span></label>
+          </div>
+          <p class="hint">Radiateurs, pompe à chaleur ou chaudière électrique. Sert à estimer comment votre consommation se répartit sur l'année et les jours rouges.</p>
+        </fieldset>
+
+        <div class="row" data-show="parcours=factures">
+          <div class="field">
+            <label for="kwh_total">Consommation annuelle (kWh)</label>
+            <input type="number" id="kwh_total" name="kwh_total" min="0" step="1" inputmode="numeric" placeholder="ex. 4 500">
+            <p class="hint">Sur votre facture de régularisation annuelle.</p>
+          </div>
+          <div class="field">
+            <label for="kwh_hc">Dont heures creuses (kWh, facultatif)</label>
+            <input type="number" id="kwh_hc" name="kwh_hc" min="0" step="1" inputmode="numeric" placeholder="ex. 1 300">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="montant">Montant payé sur la période (€, facultatif)</label>
+          <input type="number" id="montant" name="montant" min="0" step="1" inputmode="numeric" placeholder="Pour contrôle seulement">
+        </div>
+        <p class="hint">Ce que vous ne remplissez pas, Claude vous le demandera au début de la conversation.</p>
+      </div>
+
+      <button class="reset" id="reset" type="button">Effacer mes réponses</button>
+    </section>
+
+    <section id="prompt">
+      <span class="kicker">Votre prompt</span>
+      <h2>Généré selon vos réponses</h2>
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+      <div class="prompt-box" id="prompt-box">
+        <div class="prompt-bar">
+          <span class="meta" id="prompt-meta"></span>
+          <button class="copy" id="copy-btn" type="button">Copier le prompt</button>
+        </div>
+        <pre id="prompt-view" tabindex="0" aria-label="Texte du prompt"></pre>
+        <button class="linkbtn" id="expand-btn" type="button">Afficher en entier</button>
+      </div>
+      <ol class="steps" id="launch"></ol>
+    </section>
+
+    <section id="tutoriels">
+      <span class="kicker">Tutoriels</span>
+      <h2>Préparer votre espace Enedis</h2>
+      <div class="tutos">
+        <div class="tuto" id="tuto-inscription">
+          <h3>Créer son compte Enedis</h3>
+          <ol class="tuto-inscription"></ol>
+          <p class="tuto-prm"></p>
+        </div>
+        <div class="tuto" id="tuto-activation">
+          <h3>Activer la consommation heure par heure</h3>
+          <ol class="tuto-activation"></ol>
+          <p id="tuto-verif-2"></p>
+        </div>
+      </div>
+      <p class="note">Les noms des menus Enedis changent de temps en temps : si un libellé diffère, cherchez la rubrique la plus proche.</p>
+    </section>
+
+    <section id="securite">
+      <span class="kicker">Ce que Claude fait et ne fait pas</span>
+      <h2>Vos accès restent entre vos mains</h2>
+      <div class="guard">
+        <p><b>Ne saisit jamais</b> votre identifiant, votre mot de passe ni un code de vérification.</p>
+        <p><b>Ne modifie rien</b> dans votre espace Enedis, pas même l'activation de la consommation horaire.</p>
+        <p><b>Ne télécharge aucun fichier</b> sur votre ordinateur : les mesures sont lues et calculées dans la page.</p>
+        <p><b>Ne rapporte que des totaux</b> dans la conversation, jamais vos valeurs heure par heure.</p>
+      </div>
+      <p class="note">Vos réponses restent dans votre navigateur ; cette page n'envoie rien. Le résultat est une estimation aux prix du jour de l'analyse : vérifiez les tarifs sur le site du fournisseur avant de souscrire. Ce n'est pas un conseil financier.</p>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>ElecMoinsChere est un projet personnel, sans lien avec Enedis, EDF, les fournisseurs cités ni Anthropic.</p>
+    <p>Tempo est une offre d'EDF, OctoSaisons une offre d'Octopus Energy. <a href="prix.html">Voir tous les prix relevés</a>.</p>
+  </div>
+</footer>
+
+<script>
+// Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
+// a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
+var EMC = (function () {
+  var VERSION = 'v5';
+  var VERSION_DATE = '31 oct. 2026';
+
+  var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
+  var TUTO_LINKY = "Le compteur Linky est un boîtier vert anis avec un petit écran qui fait défiler des informations quand on appuie sur ses touches + et −. Un ancien compteur est gris, noir ou blanc, avec un disque qui tourne ou un afficheur sans touches.";
+  var TUTO_PRM = "Le numéro PRM (ou PDL) compte 14 chiffres. Il figure sur toutes vos factures d'électricité. Vous pouvez aussi le lire sur l'écran du Linky : appuyez plusieurs fois sur la touche + jusqu'à l'affichage « NUMERO PRM ». Ne le confondez pas avec le numéro de série gravé sur le boîtier.";
+  var TUTO_INSCRIPTION = [
+    "Préparez votre numéro PRM (14 chiffres, sur votre facture ou sur l'écran du Linky).",
+    "Allez sur mon-compte-particulier.enedis.fr et choisissez de créer un compte particulier.",
+    "Indiquez votre nom, votre prénom et votre adresse e-mail.",
+    "Ouvrez l'e-mail d'Enedis (regardez aussi dans les indésirables) et cliquez sur le lien pour finaliser l'inscription.",
+    "Créez un mot de passe : au moins 8 caractères, avec une majuscule, un chiffre et un caractère spécial.",
+    "À la première connexion, acceptez les conditions d'utilisation et vérifiez l'adresse du logement.",
+    "Ajoutez votre compteur avec le numéro PRM. Il faut être titulaire du contrat d'électricité de ce logement.",
+    "C'est prêt quand votre consommation par jour s'affiche dans le suivi des mesures (les données arrivent avec un jour de décalage)."
+  ];
+  var TUTO_ACTIVATION = [
+    "Connectez-vous à mon-compte-particulier.enedis.fr.",
+    "Ouvrez la rubrique qui gère l'accès à vos données (« Gérer l'accès à mes données » ; le nom exact peut varier selon l'affichage).",
+    "Activez l'enregistrement de la consommation horaire dans votre compteur, puis sa collecte par Enedis (deux interrupteurs, ou un seul selon l'affichage).",
+    "C'est gratuit, révocable à tout moment, et ça ne change ni votre contrat ni votre facture. Votre fournisseur n'y a pas accès.",
+    "Les mesures arrivent à partir du lendemain, jamais avant : l'historique démarre ce jour-là. Il faut 12 mois pour une comparaison complète.",
+    "En attendant, une analyse estimée reste possible avec votre consommation par jour, collectée par défaut sur les compteurs Linky."
+  ];
+  var TUTO_VERIFIER_HORAIRE = "Pour vérifier : dans votre espace Enedis, ouvrez le suivi de vos mesures et choisissez l'affichage par heure (ou par demi-heure). Si des barres apparaissent, la consommation horaire est activée ; reculez dans le temps pour voir depuis quand.";
+
+  function liste(t) { return t.map(function (x, i) { return '   ' + (i + 1) + '. ' + x; }).join('\n'); }
+
+  var LIBELLES = {
+    loc: { metro: 'France métropolitaine continentale', corse: 'Corse', dom: 'outre-mer' },
+    reseau: { enedis: 'Enedis', eld: 'une entreprise locale de distribution', nsp: 'je ne sais pas' },
+    eld_export: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' },
+    linky: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' },
+    compte: { oui: 'oui', non: "non, je le crée en suivant le tutoriel" },
+    horaire: { plus12: 'oui, depuis plus de 12 mois', moins12: 'oui, depuis moins de 12 mois', non: 'non', nsp: 'je ne sais pas' },
+    appareil: { desktop: "application Claude sur ordinateur, avec le navigateur intégré", web: 'Claude sur le web ou sur mobile (je joindrai des fichiers)' },
+    chauffage: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' }
+  };
+
+  // Parcours : null = indéterminé (version complète), sinon horszone | factures | fichier | enedis
+  function parcours(a) {
+    if (a.loc === 'corse' || a.loc === 'dom') return 'horszone';
+    if (a.reseau === 'eld') return a.eld_export === 'oui' ? 'fichier' : 'factures';
+    if (a.linky === 'non') return 'factures';
+    if (!a.loc && !a.reseau && !a.linky && !a.appareil) return null;
+    if (a.appareil === 'web') return 'fichier';
+    return 'enedis';
+  }
+
+  function precision(a, p) {
+    if (p === 'factures') return 'estimée (factures)';
+    if (a.horaire === 'plus12') return 'complète (heure par heure)';
+    if (a.horaire === 'moins12') return 'partielle (heure par heure sur une partie de la période)';
+    if (a.horaire === 'non') return 'estimée (consommation par jour)';
+    return null;
+  }
+
+  function nbRepondues(a) {
+    return Object.keys(a).filter(function (k) { return a[k] !== undefined && a[k] !== '' && a[k] !== null; }).length;
+  }
+
+  function blocReponses(a, p) {
+    var L = [];
+    function add(lib, v) { if (v !== undefined && v !== null && v !== '') L.push('- ' + lib + ' : ' + v); }
+    add('Logement', LIBELLES.loc[a.loc]);
+    add('Gestionnaire de réseau', LIBELLES.reseau[a.reseau]);
+    if (a.reseau === 'eld') add('Mon gestionnaire permet de télécharger ma consommation horaire', LIBELLES.eld_export[a.eld_export]);
+    add('Compteur Linky', LIBELLES.linky[a.linky]);
+    if (p === 'enedis' || p === 'fichier') {
+      if (a.reseau !== 'eld') add('Compte client Enedis', LIBELLES.compte[a.compte]);
+      if (a.reseau !== 'eld') add('Consommation horaire activée', LIBELLES.horaire[a.horaire]);
+      if (a.horaire === 'moins12') add('Activée depuis (environ)', a.activation);
+    }
+    add('Appareil utilisé', LIBELLES.appareil[a.appareil]);
+    add('Puissance souscrite', a.kva ? (a.kva === 'nsp' ? 'je ne sais pas' : a.kva + ' kVA') : '');
+    add('Fournisseur actuel', a.fournisseur);
+    add('Offre actuelle', a.offre);
+    if (p !== 'factures') add('Période à analyser', a.debut && a.fin ? 'du ' + a.debut + ' au ' + a.fin : '');
+    add('Montant payé sur la période (contrôle)', a.montant ? a.montant + ' €' : '');
+    add('Chauffage électrique', LIBELLES.chauffage[a.chauffage]);
+    if (p === 'factures') {
+      add('Consommation annuelle', a.kwh_total ? a.kwh_total + ' kWh' : '');
+      add('Dont heures creuses', a.kwh_hc ? a.kwh_hc + ' kWh' : '');
+    }
+    var pr = precision(a, p);
+    if (pr) add("Précision attendue de l'analyse", pr);
+    return L.join('\n');
+  }
+
+  var REGLES_CHOIX = "Pose les questions avec l'outil de questions à choix (cartes à cliquer), jamais sous forme de liste dans un message. Contraintes de l'outil : 4 choix au plus par question, 4 questions au plus par envoi, et un champ « Autre » où je peux taper ma réponse est toujours ajouté automatiquement (n'ajoute donc pas toi-même de choix « Autre »). Quand une liste dépasse 4 choix, découpe-la en pages : 3 choix + un 4e choix « Voir plus… » qui ouvre la page suivante dans un nouvel envoi. Si l'outil n'est pas disponible dans la conversation, reviens à une liste numérotée dans un message.";
+
+  var Q_PUISSANCE = "Puissance souscrite — choix : 6 kVA, 9 kVA, 3 kVA, 12 kVA. Dans la description, précise que pour 15, 18, 24, 30 ou 36 kVA je tape la valeur dans le champ « Autre », et qu'elle figure sur ma facture (« puissance souscrite »).";
+  var Q_PERIODE = "Période à analyser (12 mois consécutifs) — trois choix calculés à partir de la date du jour, avec les dates exactes dans le libellé : les 12 derniers mois se terminant il y a 2 jours (Recommandé) ; les 12 derniers mois civils complets ; la dernière année civile complète. Pour une autre période, je tape les dates dans « Autre ». Refuse une période de plus de 12 mois ou qui remonte à plus de 2 ans (Enedis ne conserve pas la courbe au-delà), et repose alors la question.";
+  var Q_FOURNISSEUR = "Fournisseur actuel, page 1 — choix : EDF, Engie, TotalEnergies, « Voir plus de fournisseurs… » (je peux aussi taper le nom dans « Autre »). Pages suivantes : Octopus Energy, Ekwateur, Mint Énergie ; puis Vattenfall, Plenitude, Primeo Énergie ; puis Alterna, Alpiq, Gaz de Bordeaux ; puis OHM Énergie, Happ-e, Enercoop ; puis Dyneff, ilek, LLUM.";
+  var Q_OFFRE = "Offre actuelle, une fois le fournisseur connu — prends ses offres dans la base ElecMoinsChere (étape 5), complète au besoin par une recherche web. Chaque choix a pour libellé l'offre et son option (par exemple chez EDF : « Tarif Bleu HP/HC », « Tarif Bleu Base », « Tempo », puis en pages suivantes Zen Fixe, Zen Online, Zen Week-End, Vert Électrique…), et pour description une courte précision (prix fixe ou indexé). Range les offres de la plus courante à la plus rare, en pages avec « Voir plus d'offres… » au-delà de 4.";
+  var Q_MONTANT = "Montant réellement payé sur la période (facultatif, uniquement pour contrôle) — choix : « Je ne le connais pas », « Je le connais » ; je peux taper le montant directement dans « Autre ». Si je choisis « Je le connais » sans montant, demande-le dans une seule question et attends ma réponse.";
+  var Q_CHAUFFAGE = "Chauffage électrique (radiateurs, pompe à chaleur ou chaudière électrique) — choix : Oui, Non, Je ne sais pas. Sert à estimer la répartition de ma consommation sur l'année et les jours rouges.";
+  var Q_FACTURES = "Consommation annuelle (sur ma dernière facture de régularisation ou dans l'espace client de mon fournisseur) — je tape le total en kWh dans « Autre », avec la part en heures creuses si je l'ai ; choix proposé : « Je vais joindre une facture » (dans ce cas, lis-la et prends-y le total, la part en heures creuses, la puissance et l'offre).";
+
+  function etape1(a, p) {
+    var out = [];
+    if (p === null) {
+      out.push("## Étape 1 — Vérifier ma situation, puis me poser les questions (avant toute action)\n");
+      out.push(REGLES_CHOIX + "\n");
+      out.push("Vérifie toi-même, sans me le demander, si le navigateur intégré de l'application Claude est disponible dans cette conversation (outils de navigation dans le panneau navigateur). S'il ne l'est pas, le parcours Enedis automatique est impossible : utilise alors le parcours B (fichiers joints).\n");
+      out.push("Premier envoi — ma situation, trois questions ensemble :\n");
+      out.push("1. Où se trouve le logement ? — choix : France métropolitaine continentale, Corse, Outre-mer. Corse ou outre-mer : arrête-toi et explique que la base de prix ne couvre que la France continentale, où se trouvent presque toutes les offres de marché ; le réseau y est géré par EDF SEI.");
+      out.push("2. Qui gère votre réseau électrique ? — choix : Enedis, Une entreprise locale (Strasbourg, Grenoble, Metz, Vienne, Deux-Sèvres, SICAE…), Je ne sais pas. Mets cette astuce dans la description : « " + TUTO_RESEAU + " » « Je ne sais pas » : continue comme pour Enedis ; si mon compteur est introuvable dans l'espace Enedis, c'est que je dépends d'une entreprise locale.");
+      out.push("3. Avez-vous un compteur Linky ? — choix : Oui, Non, Je ne sais pas. Astuce en description : « " + TUTO_LINKY + " » « Je ne sais pas » : continue, le test de l'étape 3 tranchera.\n");
+      out.push("Selon les réponses, choisis le parcours :");
+      out.push("- Entreprise locale : demande si son espace client permet de télécharger la consommation heure par heure (Oui / Non / Je ne sais pas). Oui → parcours B (fichiers joints), en m'expliquant de télécharger l'export dans l'espace client de mon gestionnaire. Non ou je ne sais pas → parcours C (factures).");
+      out.push("- Pas de Linky → parcours C (factures).");
+      out.push("- Enedis (ou je ne sais pas) avec Linky → parcours A si le navigateur intégré est disponible, sinon parcours B avec l'export Enedis.\n");
+      out.push("Deuxième envoi — accès à mes données (parcours A et B avec Enedis), deux questions ensemble :\n");
+      out.push("4. Avez-vous un compte sur l'espace client Enedis (mon-compte-particulier.enedis.fr) ? — choix : Oui, Non. Si Non, affiche-moi ce tutoriel dans un message, puis attends que je réponde « compte créé » :\n" + liste(TUTO_INSCRIPTION) + "\n   Astuce PRM : " + TUTO_PRM);
+      out.push("5. La consommation heure par heure est-elle activée dans votre espace Enedis ? — choix : Oui, depuis plus de 12 mois ; Oui, depuis moins de 12 mois ; Non ; Je ne sais pas. Mets cette astuce en description : « " + TUTO_VERIFIER_HORAIRE + " » Si Non, affiche ce tutoriel, conseille-moi de l'activer aujourd'hui pour la prochaine fois, et continue avec une analyse estimée à partir de la consommation par jour :\n" + liste(TUTO_ACTIVATION) + "\n   « Je ne sais pas » : continue, le test de l'étape 3 tranchera.\n");
+      out.push("Troisième envoi — mon contrat :\n");
+      out.push("6. " + Q_PUISSANCE);
+      out.push("7. " + Q_PERIODE + " (parcours A et B seulement.)");
+      out.push("8. " + Q_FOURNISSEUR + "\n");
+      out.push("Quatrième envoi, une fois le fournisseur connu :\n");
+      out.push("9. " + Q_OFFRE);
+      out.push("10. " + Q_MONTANT);
+      out.push("11. " + Q_CHAUFFAGE + " (Seulement si l'analyse sera estimée : parcours C, ou consommation horaire absente.)");
+      out.push("12. " + Q_FACTURES + " (Parcours C seulement.)");
+      return out.join('\n');
+    }
+    out.push("## Étape 1 — Compléter mes réponses (avant toute action)\n");
+    out.push("Mes réponses ci-dessus viennent du questionnaire ElecMoinsChere : ne me les repose pas. Pose seulement les questions qui manquent ci-dessous, dans l'ordre, puis passe à l'étape 2.\n");
+    var Q = [];
+    if (!a.kva || a.kva === 'nsp') Q.push(Q_PUISSANCE);
+    if (p !== 'factures' && !(a.debut && a.fin)) Q.push(Q_PERIODE);
+    if (!a.fournisseur) Q.push(Q_FOURNISSEUR);
+    if (!a.offre) Q.push(Q_OFFRE);
+    var estime = (p === 'factures' || a.horaire === 'non');
+    if (estime && (!a.chauffage || a.chauffage === 'nsp')) Q.push(Q_CHAUFFAGE);
+    if (p === 'factures' && !a.kwh_total) Q.push(Q_FACTURES);
+    if (p === 'enedis' && a.compte === 'non') Q.unshift("Avant tout, vérifie que j'ai bien créé mon compte Enedis : demande-moi de confirmer (choix : « Compte créé et compteur ajouté », « Pas encore »). Si « Pas encore », remets-moi ce tutoriel :\n" + liste(TUTO_INSCRIPTION) + "\n   Astuce PRM : " + TUTO_PRM);
+    if (Q.length === 0) out.push("Il ne manque aucune réponse : passe directement à l'étape 2.");
+    else {
+      out.push(REGLES_CHOIX + "\n");
+      out.push("Questions qui manquent :\n");
+      Q.forEach(function (q, i) { out.push((i + 1) + '. ' + q); });
+    }
+    if (p === 'enedis') out.push("\nVérifie aussi, sans me le demander, que le navigateur intégré de l'application Claude est disponible. S'il ne l'est pas, dis-le-moi et passe au parcours par fichiers : explique-moi comment télécharger mes données Enedis (étape 2 bis) et lis les fichiers que je joins.");
+    return out.join('\n');
+  }
+
+  var MSG_ACTIVATION = [
+    "> ⚠️ Votre consommation heure par heure n'est pas disponible chez Enedis (pour la période demandée / avant le JJ/MM/AAAA). L'analyse continue avec votre consommation par jour : elle sera estimée, donc moins précise, surtout pour Tempo et les heures creuses.",
+    ">",
+    "> Pour l'activer (2 minutes, gratuit) :",
+    TUTO_ACTIVATION.slice(0, 3).map(function (x, i) { return '> ' + (i + 1) + '. ' + x; }).join('\n'),
+    ">",
+    "> Ce qu'il faut savoir :",
+    "> - Les données arrivent à partir du lendemain de l'activation, jamais avant : l'historique démarre ce jour-là. Revenez dans 12 mois pour une comparaison complète.",
+    "> - Si votre compteur n'est pas un Linky ou n'est pas encore communicant, l'activation n'est pas possible : contactez Enedis.",
+    "> - Laissez l'enregistrement activé : il ne change ni votre contrat, ni votre facture."
+  ].join('\n');
+
+  function parcoursEnedis(a, intro) {
+    var cas = { plus12: 'cas 4a (année complète)', moins12: 'cas 4b (partielle)', non: 'cas 4c (consommation par jour)' }[a.horaire];
+    return [
+      intro ? "## Parcours A — Espace Enedis dans le navigateur intégré\n" : "",
+      "## Étape 2 — Ouvrir Enedis et me laisser me connecter\n",
+      "- Ouvre https://mon-compte-particulier.enedis.fr/ dans le navigateur intégré de l'application Claude. Si le site n'est pas encore autorisé, demande l'accès au site.",
+      "- Vérifie si le panneau du navigateur est affiché. S'il est masqué, dis-moi de l'afficher (Ctrl+Maj+B sur Windows, Cmd+Maj+B sur Mac).",
+      "- Demande-moi de me connecter moi-même. Tu ne saisis jamais mes identifiants, mon mot de passe ni un code de vérification. Attends que je confirme.",
+      "- Vérifie la connexion en exécutant du JavaScript dans la page : GET https://alex.microapplications.enedis.fr/mon-compte/api/private/v2/userinfos?espace=PARTICULIER (avec credentials:'include'). La réponse donne idPersonne et cnAlex. En cas d'erreur 401 ou 403, demande-moi de me reconnecter.\n",
+      "## Étape 3 — Récupérer mes informations de compteur et tester mes données\n",
+      "- Liste des PRM : GET https://alex.microapplications.enedis.fr/mes-prms-part/api/private/v2/personnes/{cnAlex}/prms. S'il y a plusieurs PRM, demande-moi lequel utiliser (avec l'outil de questions à choix). Si la liste est vide, mon compteur n'est pas rattaché : remets-moi l'étape « Ajoutez votre compteur » du tutoriel d'inscription avec l'astuce PRM, et attends. Si je dépends en fait d'une entreprise locale, passe au parcours C (factures).",
+      "- Détail du PRM : GET .../mes-prms-part/api/private/v2/personnes/{cnAlex}/prms/{PRM}?embed=SITCOM%2CSYNCON. Récupère le champ programmationHoraireHC : c'est mon créneau réel d'heures creuses (par exemple « 22h-6h », ou deux plages). N'utilise jamais un créneau par défaut si le vrai est disponible. Si tu trouves la puissance souscrite (clé contenant « puissance », « kva » ou « calibre »), compare-la avec ma réponse ; sinon garde ma réponse sans me redemander.\n",
+      "### Test — consommation horaire et quotidienne disponibles\n",
+      "1. Indice : dans le JSON du détail du PRM, cherche toute clé ou valeur qui contient « courbe », « CDC », « collecte », « horaire », « journalier » ou « consentement », et montre-moi ce que tu trouves.",
+      "2. Consommation par heure : charge SheetJS (https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js), puis appelle le chemin .../donnees-energetiques/file?mesuresTypeCode=COURBE&...&format=EXCEL de l'étape 4 sur deux jours : le premier jour de la période et un jour récent (il y a environ 5 jours). Lis la deuxième feuille (« Puissance moyenne soutirée »). Réussi s'il y a des lignes avec deux horodates et une valeur de type number ; échec si la feuille est vide, ne contient que « NA » ou « Données indisponibles ». Si le premier jour échoue mais le jour récent réussit, cherche la première date disponible (par dichotomie, mois par mois).",
+      "3. Consommation par jour : appelle directement le même chemin avec /file, mesuresTypeCode=ENERGIE et format=EXCEL, sur les 7 derniers jours (l'appel sans /file, en JSON, est bloqué par le navigateur). Feuille « Export Consommation Quotidienne » : une date en texte (« JJ/MM/AAAA ») puis la valeur en kWh.",
+      "4. Rends-moi le résultat dans un petit tableau : Donnée | Disponible ? | Depuis | Remarque. Puis dis-moi quel cas s'applique" + (cas ? " (d'après mes réponses, ce devrait être le " + cas + " ; si le test dit autre chose, suis le test et préviens-moi)" : "") + " :",
+      "   - consommation par heure sur toute la période → cas 4a ;",
+      "   - consommation par heure sur une partie seulement → cas 4b ;",
+      "   - pas de consommation par heure → cas 4c, et affiche ce message, simple et sans jargon (pas de code HTTP, pas de nom d'API) :\n",
+      MSG_ACTIVATION + "\n",
+      "   - ni consommation par heure ni par jour → mon compteur n'est peut-être pas communicant : dis-le-moi, conseille de vérifier dans l'espace Enedis ou de contacter Enedis, et propose le parcours C (factures).",
+      "   Tu ne modifies jamais toi-même l'activation dans mon espace Enedis.\n",
+      "## Étape 4 — Télécharger ma consommation dans la page (sans fichier)\n",
+      "Lance dans la page un script asynchrone qui tourne en arrière-plan, garde son état dans window.__enedis (statut, avancement, journal, erreurs), puis interroge cet état par attentes de 10 s maximum jusqu'à la fin. Préviens-moi de la durée au lancement : environ 3 à 5 s par tranche, soit 3 à 4 min pour un an. Pendant ce temps, avance sur l'étape 5.\n",
+      "### 4a. Consommation par heure (cas 4a, et partie disponible du cas 4b)\n",
+      "- Découpe la période en tranches de 7 jours. La date de fin est incluse : une tranche va du jour J au jour J+6, la suivante commence à J+7. Pour chaque tranche : GET https://alex.microapplications.enedis.fr/mes-mesures-prm/api/private/v2/personnes/{idPersonne}/prms/{PRM}/donnees-energetiques/file?mesuresTypeCode=COURBE&mesuresCorrigees=false&typeDonnees=CONS&dateDebut=AAAA-MM-JJ&dateFin=AAAA-MM-JJ&format=EXCEL&segments=C5 avec credentials:'include', 1,5 s de pause entre deux appels, 3 essais maximum par tranche (8 s entre deux essais).",
+      "- Lis chaque fichier avec XLSX.read(buffer,{type:'array'}) et sheet_to_json(...,{header:1,raw:true}). Pièges connus :",
+      "  - Chaque ligne contient deux horodates en texte (« JJ/MM/AAAA hh:mm:ss » de début, puis de fin), puis la valeur en nombre. Prends uniquement une cellule de type number comme valeur ; jamais parseFloat sur une cellule texte (« 01/09/2025 00:15 » deviendrait 1).",
+      "  - La valeur est une puissance moyenne en kW, pas une énergie : kWh = kW × durée en minutes / 60. La durée vient de l'écart entre début et fin (15 ou 30 min).",
+      "  - Range chaque intervalle dans l'heure de son horodate de début (clé « AAAA-MM-JJ|heure »).",
+      "  - Changement d'heure : le dernier dimanche d'octobre compte 25 h, le dernier dimanche de mars 23 h. Si l'écart début-fin est négatif ou nul, ajoute 60 min au lieu d'écarter la ligne, et additionne les deux intervalles qui tombent dans la même heure.",
+      "- Contrôles : nombre d'heures (8 760, ou 8 784 en année bissextile), tranches en échec, jours et heures manquants, total en kWh. Comble les jours manquants avec le total quotidien (4c) réparti selon mon profil horaire moyen du même mois, et dis-le-moi.\n",
+      "### 4b. Période partiellement couverte\n",
+      "- Télécharge la consommation par heure depuis la première date disponible (4a), et la consommation par jour sur toute la période (4c).",
+      "- Pour chaque jour sans mesure horaire, répartis son total quotidien selon mon profil horaire moyen (24 valeurs normalisées) calculé sur les jours mesurés du même type (semaine ou week-end), en prenant le mois mesuré le plus proche en saison (hiver de novembre à mars, été d'avril à octobre).",
+      "- Si aucun mois d'hiver n'est mesuré, le profil d'hiver est incertain (chauffage, éclairage) : signale-le, avec la part de l'année estimée.\n",
+      "### 4c. Consommation par jour seulement\n",
+      "- Télécharge la consommation par jour sur toute la période : même chemin avec /file, mesuresTypeCode=ENERGIE, format=EXCEL, par tranches de 30 jours (7 si Enedis refuse), mêmes pauses et essais.",
+      "- Les kWh de chaque date sont exacts ; seule la répartition dans la journée est estimée. Pour les heures creuses, utilise la part d'heures creuses de ma facture si je la connais ; sinon 30 % si mon offre actuelle a des heures creuses, 25 % sinon (35 % avec un chauffe-eau électrique asservi aux heures creuses). Pour Tempo et OctoSaisons, les kWh des jours bleus, blancs et rouges sont exacts (date par date), seule la part d'heures pleines de ces jours est estimée.",
+      "- Annonce clairement dans le résultat que l'analyse est estimée, et ce qui l'est.\n",
+      "- Dans tous les cas, ne renvoie pas les valeurs horaires dans la conversation : regroupe-les dans la page en totaux par plage (étape 6) et ne rapatrie que ces totaux."
+    ].join('\n');
+  }
+
+  function parcoursFichier(a, intro) {
+    var eld = a.reseau === 'eld';
+    var L = [];
+    L.push(intro ? "## Parcours B — Fichiers joints\n" : "");
+    L.push("## Étape 2 — Récupérer ma consommation dans les fichiers joints\n");
+    L.push("- Regarde si j'ai joint des fichiers de consommation (Excel, CSV ou ZIP) à la conversation. S'il n'y en a pas, explique-moi comment les obtenir, puis attends que je les joigne :");
+    if (!eld) {
+      L.push("  - Enedis : sur mon-compte-particulier.enedis.fr, ouvrez le suivi de vos mesures, choisissez la consommation horaire (par demi-heure) et la période, puis « Télécharger mes données » au format Excel. Si le site limite la durée d'un téléchargement, faites-en plusieurs et joignez-les tous. Si la consommation horaire n'est pas disponible, téléchargez la consommation par jour sur 12 mois.");
+      L.push("  - Si je n'ai pas encore de compte Enedis, donne-moi ce tutoriel :\n" + liste(TUTO_INSCRIPTION));
+      L.push("  - Si la consommation horaire n'est pas activée, donne-moi ce tutoriel, puis demande la consommation par jour en attendant :\n" + liste(TUTO_ACTIVATION));
+    } else {
+      L.push("  - Entreprise locale : dans l'espace client de votre gestionnaire de réseau, cherchez la rubrique consommation ou mesures, et téléchargez la consommation heure par heure (ou par demi-heure) sur 12 mois. Si seule la consommation par jour existe, téléchargez-la. Si rien n'est téléchargeable, passez au parcours par factures.");
+    }
+    L.push("- Lis tous les fichiers dans du code (pas à l'œil). Identifie pour chacun : le pas de temps (15 min, 30 min, heure ou jour), le format des dates, et l'unité.");
+    L.push("  - Si la valeur est une puissance (W ou kW, par exemple « Puissance moyenne soutirée » chez Enedis) : kWh = kW × durée en minutes / 60, avec la durée tirée de l'écart entre début et fin. Convertis les W en kW.");
+    L.push("  - Si la valeur est une énergie (Wh ou kWh) : additionne-la.");
+    L.push("  - Prends uniquement des cellules numériques comme valeurs ; ne transforme jamais une date en nombre. Gère le changement d'heure (25 h fin octobre, 23 h fin mars).");
+    L.push("  - Supprime les doublons quand des fichiers se chevauchent.");
+    L.push("- Range la consommation heure par heure (clé « AAAA-MM-JJ|heure »), puis contrôle : nombre d'heures, jours manquants, total en kWh. Garde 12 mois consécutifs" + (a.debut && a.fin ? " (du " + a.debut + " au " + a.fin + " si les fichiers les couvrent)" : "") + ".");
+    L.push("- Créneau d'heures creuses : prends celui de ma facture ou de mon espace client si je te l'indique ; sinon demande-le-moi (choix : 22h-6h, 23h-7h, Je ne sais pas ; « Autre » pour deux plages). « Je ne sais pas » : utilise 22h-6h et signale-le.");
+    L.push("- Fichiers avec des jours partiellement couverts ou seulement des totaux par jour : applique les règles d'estimation suivantes, et dis-le dans le résultat.");
+    L.push("  - Jours sans mesure horaire : répartis le total quotidien selon mon profil horaire moyen des jours mesurés du même type (semaine ou week-end) et de la même saison.");
+    L.push("  - Totaux par jour seulement : heures creuses = part de ma facture si je la connais, sinon 30 % si mon offre a des heures creuses, 25 % sinon. Les kWh par date restent exacts pour les jours Tempo.");
+    return L.join('\n');
+  }
+
+  function parcoursFactures(a, intro) {
+    var ch = a.chauffage === 'oui' ? 'avec' : (a.chauffage === 'non' ? 'sans' : null);
+    return [
+      intro ? "## Parcours C — Estimation à partir des factures\n" : "",
+      "## Étape 2 — Construire un profil estimé à partir de mes factures\n",
+      "- Données de départ : ma consommation annuelle totale en kWh, la part en heures creuses si je l'ai, ma puissance et mon offre. Si je joins une facture, lis-la pour y prendre ces informations, et montre-moi ce que tu as retenu.",
+      "- Répartition par mois (% du total annuel, de janvier à décembre) :",
+      "  - avec chauffage électrique : 15 ; 13 ; 11 ; 7 ; 5 ; 4 ; 4 ; 3,5 ; 4 ; 7 ; 12 ; 14,5 ;",
+      "  - sans chauffage électrique : 10,5 ; 9,5 ; 9 ; 8 ; 7,5 ; 7 ; 7 ; 6,5 ; 7 ; 8 ; 9,5 ; 10,5." + (ch ? " Mon logement est " + ch + " chauffage électrique." : " Si je ne sais pas, prends la moyenne des deux et signale-le."),
+      "- Heures creuses : la part de ma facture si je l'ai ; sinon 30 % avec une offre à heures creuses, 25 % sinon. Créneau : 22h-6h, sauf si je t'en indique un autre.",
+      "- Jours Tempo et rouges OctoSaisons : prends le vrai calendrier Tempo des 12 derniers mois (étape 5b). Un jour rouge ou blanc consomme 1,3 fois la moyenne du mois avec chauffage électrique, 1,1 fois sans ; un jour bleu prend le reste du mois. Part d'heures pleines ces jours-là : celle de l'année.",
+      "- Week-end : consommation d'un jour de week-end = 1,15 fois celle d'un jour de semaine du même mois.",
+      "- Construis à partir de ces règles les totaux par plage de l'étape 6, dans du code.",
+      "- Préviens-moi dès le début, puis dans le résultat, que l'analyse est estimée : les offres Base et HP/HC sont assez fiables (ma consommation totale est réelle), les offres à couleurs ou à saisons beaucoup moins. Pour une analyse précise, conseille-moi de demander un compteur Linky (s'il n'est pas posé), puis d'activer la consommation horaire."
+    ].join('\n');
+  }
+
+  function etape5(a, p) {
+    var nav = (p === 'enedis' || p === null);
+    return [
+      "## Étape 5 — Récupérer les prix et le calendrier Tempo\n",
+      "### 5a. Grilles de prix : base ElecMoinsChere (mise à jour chaque jour)\n",
+      "- Lis la base : https://raw.githubusercontent.com/NicolasPopy/elec-moins-chere-prix/main/data/offres.json" + (nav ? " — dans un nouvel onglet du navigateur intégré (demande l'accès au site si besoin), en JavaScript : JSON.parse(document.body.innerText) ; sans navigateur, avec ton outil de lecture de pages web." : " — avec ton outil de lecture de pages web (ou le navigateur intégré s'il est disponible)."),
+      "- Vérifie meta.mis_a_jour_le : si la base a plus de 7 jours, préviens-moi et complète par une recherche web des grilles des offres que tu retiens.",
+      "- Pour chaque offre, garde seulement la ligne de grille de MA puissance (grille[].kva) : abonnement_mois (€ TTC par mois) et prix_kwh (€ TTC par kWh, un prix par poste : base, hp/hc, bleu_hp…rouge_hc, ete_hp…, hiver_hp…, semaine/week_end…). Le sens de chaque poste est dans meta.postes, les plages horaires dans plages_horaires. Ignore les offres marquées ouvert_nouveaux_clients: false, sauf mon contrat actuel (champ absent = offre ouverte). Une offre dont l'abonnement est vide (null) pour ma puissance est écartée et signalée.",
+      "- Fiabilité : verification vaut confirme, source_unique ou conflit (détail dans notes). Signale les offres « conflit » ou « source_unique » classées dans les 5 premières.",
+      "- Promotions : prends promotions[] (description, valeur_an1_eur, nouveaux_clients, date_fin, conditions) et ignore celles dont la date_fin est dépassée.",
+      "- Si mon offre actuelle n'est pas dans la base, cherche sa grille TTC sur le site du fournisseur et sur un comparateur récent, et précise qu'elle vient du web. Une offre sans prix pour ma puissance est écartée et signalée, jamais inventée.",
+      "- Si la base est illisible, essaie https://nicolaspopy.github.io/elec-moins-chere-prix/ ; en dernier recours, recherche les grilles sur le web (deux sources croisées, la plus récente gardée).\n",
+      "### 5b. Calendrier Tempo\n",
+      "- Source conseillée : l'API api-couleur-tempo.fr." + (nav ? " Ouvre https://www.api-couleur-tempo.fr/api/joursTempo?periode=AAAA-AAAA dans un nouvel onglet du navigateur intégré (demande l'accès au site) : la page affiche la documentation en HTML, donc lis les données en JavaScript depuis cet onglet avec fetch('/api/joursTempo?periode=AAAA-AAAA',{headers:{accept:'application/json'}})." : " Lis https://www.api-couleur-tempo.fr/api/joursTempo?periode=AAAA-AAAA (réponse JSON) ; si ce site n'est pas accessible, cherche le calendrier sur le web (calendrier-tempo.fr, par exemple).") + " Chaque saison va de septembre à août (periode=2024-2025, 2025-2026…) : charge toutes les saisons qui couvrent la période, plus la veille du premier jour. Réponse : liste de {dateJour, codeJour}, avec 1 = bleu, 2 = blanc, 3 = rouge.",
+      "- Ne rapatrie dans la conversation que la liste compacte des jours blancs et rouges (« MM-JJ:code ») et le nombre de jours par couleur.",
+      "- Une journée Tempo va de 6h à 6h le lendemain : les heures de 0h à 6h appartiennent à la couleur de la veille. Les jours rouges d'OctoSaisons sont les jours rouges Tempo."
+    ].join('\n');
+  }
+
+  function etape6() {
+    return [
+      "## Étape 6 — Calculer\n",
+      "À partir des totaux horaires (mesurés ou estimés), et toujours aux prix actuels, pour que toutes les offres soient comparables :\n",
+      "- Base : abonnement annuel + total kWh × prix Base.",
+      "- HP/HC : abonnement + kWh HP × prix HP + kWh HC × prix HC, avec mon créneau réel d'heures creuses.",
+      "- Tempo : kWh HP et HC par couleur (6h-22h en heures pleines, 22h-6h en heures creuses, journée de 6h à 6h).",
+      "- OctoSaisons : kWh par saison, par plage et pour les jours rouges (été d'avril à octobre : heures creuses 21h-7h et 11h-17h ; hiver de novembre à mars : 21h-7h). Un jour rouge OctoSaisons est la date civile du jour rouge Tempo, avec les heures pleines d'hiver (7h-21h) au prix rouge_hp et le reste au prix rouge_hc ; signale cette hypothèse.",
+      "- Week-end : tarif réduit le samedi, le dimanche et les jours fériés français de la période (1er janvier, lundi de Pâques, 1er et 8 mai, Ascension, lundi de Pentecôte, 14 juillet, 15 août, 1er et 11 novembre, 25 décembre). Pour Zen Week-End Plus, le jour choisi est mon jour de semaine le plus consommateur ; dis lequel.",
+      "- Saisons avec heures super creuses (Zen Estival…) : applique les plages de plages_horaires ; si une saison a un prix « hsc » sans plage décrite, n'en compte pas pour cette saison et signale-le.",
+      "- Autres options (Zen Flex, Eco Fixe 2 saisons…) : calcule-les avec leurs plages_horaires ; si une plage n'est pas calculable (jours Sobriété non publiés, par exemple), écarte l'offre et dis-le.",
+      "- Promotions : déduis la valeur de la promotion en cours sur les 12 premiers mois (2 mois d'abonnement offerts = 2/12 de l'abonnement annuel ; un bonus de 50 € = −50 €). Si elle ne s'applique pas à moi (déjà client de ce fournisseur, par exemple), ne la déduis pas et signale-le. Le classement tient compte des promotions ; garde aussi le coût sans promotion pour la deuxième année.",
+      "- Mon contrat actuel : son coût aux prix d'aujourd'hui sert de référence, jamais un montant payé dans le passé. Si je t'ai donné ce que j'ai payé, sers-t'en seulement pour contrôler la cohérence, en expliquant l'écart (prix de l'époque).",
+      "- Fais tous les calculs dans du code exécuté, jamais de tête. Regroupe d'abord la consommation en totaux par plage (total, HP/HC, Tempo par couleur et plage, OctoSaisons, semaine/week-end et kWh par jour de semaine, saisons été/hiver avec HP/HC/HSC, totaux mensuels) ; seuls ces totaux reviennent dans la conversation, puis le coût de chaque offre se calcule dans un script."
+    ].join('\n');
+  }
+
+  function etape7() {
+    return [
+      "## Étape 7 — Me rendre le résultat\n",
+      "1. Une ligne de synthèse : période, total en kWh, part en heures creuses (%), créneau d'heures creuses, puissance, date de mise à jour des prix, et précision de l'analyse (complète, partielle ou estimée, avec la part estimée).",
+      "2. Le tableau principal, trié du moins cher au plus cher, une seule ligne par offre (fournisseur + nom d'offre) qui garde la moins chère de ses options, avec seulement quatre colonnes : Fournisseur – offre | Meilleur coût (promotion déduite, option retenue entre parenthèses) | Promo en cours (description courte et valeur en euros la première année, ou « – ») | Écart vs mon contrat actuel. Mon contrat apparaît en gras avec la mention « réf. ». Les offres Tempo et OctoSaisons y figurent aussi. Dans la colonne Écart : 🟢 devant le montant quand l'offre est moins chère, 🔴 quand elle est plus chère. Sous le tableau, une ligne précise que les offres avec promotion coûteront plus cher à partir de la deuxième année. Si l'analyse est estimée, marque d'un « ~ » les coûts des offres à couleurs et à saisons.",
+      "3. Le détail Tempo : kWh HP et HC, et coût, pour les jours bleus, blancs et rouges ; plus le coût Tempo si ma consommation en heures pleines les jours rouges était ramenée au prix d'un jour bleu.",
+      "4. Le détail OctoSaisons par saison.",
+      "5. Trois à quatre points à retenir : l'option la plus adaptée à mon profil, l'économie possible, et les conditions dans lesquelles une offre à couleurs deviendrait rentable. Si l'analyse est partielle ou estimée, ajoute comment obtenir une analyse complète (activer la consommation horaire, revenir dans X mois).",
+      "6. Ce qui n'a pas pu être vérifié : date de mise à jour de la base, offres « conflit » ou « source_unique » bien classées, offres écartées, hypothèses de calcul et d'estimation, offres prises sur le web, jours manquants.",
+      "7. Les sources sous forme de liens : la base ElecMoinsChere, le calendrier Tempo, et les sources web éventuelles."
+    ].join('\n');
+  }
+
+  function regles(p) {
+    var L = ["Ne télécharge aucun fichier sur mon ordinateur. Ne modifie rien dans mon espace Enedis ni chez mon fournisseur. Ne saisis jamais mes identifiants, mots de passe ou codes."];
+    if (p === 'enedis' || p === null) L.push("Dans l'espace Enedis, n'utilise aucune autre page que celles citées ci-dessus.");
+    return L.join(' ');
+  }
+
+  function horsZone() {
+    return "Le logement est en Corse ou outre-mer. Ce comparatif ne s'applique pas : la base de prix ElecMoinsChere ne couvre que la France métropolitaine continentale, où se trouvent presque toutes les offres de marché. Dans ces territoires, le réseau est géré par EDF SEI et le tarif réglementé d'EDF est l'offre de référence.";
+  }
+
+  function build(a) {
+    a = a || {};
+    var p = parcours(a);
+    if (p === 'horszone') return { parcours: p, texte: horsZone() };
+    var src = {
+      enedis: "Ma consommation vient de mon espace client Enedis, que tu ouvres dans le navigateur intégré de l'application Claude.",
+      fichier: "Ma consommation vient des fichiers que je joins à la conversation (export de mon gestionnaire de réseau).",
+      factures: "Je n'ai pas de consommation heure par heure : tu estimes mon profil à partir de mes factures, et tu le dis clairement dans le résultat."
+    }[p] || "Selon ma situation (étape 1), ma consommation vient de mon espace client Enedis ouvert dans le navigateur intégré de l'application Claude (parcours A), de fichiers que je joins (parcours B), ou de mes factures (parcours C, estimation).";
+    var parts = [];
+    parts.push("Tu vas calculer combien me coûterait un an de ma consommation électrique réelle chez les principaux fournisseurs d'électricité en France, et comparer avec mon contrat actuel. " + src + " Les prix viennent de la base ElecMoinsChere, mise à jour chaque jour. Suis les étapes dans l'ordre.");
+    if (p !== null && nbRepondues(a) > 0) parts.push("## Mes réponses (questionnaire ElecMoinsChere)\n\n" + blocReponses(a, p));
+    parts.push(etape1(a, p));
+    if (p === null) {
+      parts.push(parcoursEnedis(a, true));
+      parts.push(parcoursFichier(a, true));
+      parts.push(parcoursFactures(a, true));
+      parts.push("## Suite commune aux trois parcours");
+    } else if (p === 'enedis') {
+      parts.push(parcoursEnedis(a, false));
+      parts.push("## Étape 2 bis — Si le navigateur intégré n'est pas disponible\n\n" + parcoursFichier(a, false).replace("## Étape 2 — Récupérer ma consommation dans les fichiers joints\n\n", ''));
+    } else if (p === 'fichier') {
+      parts.push(parcoursFichier(a, false));
+    } else if (p === 'factures') {
+      parts.push(parcoursFactures(a, false));
+    }
+    parts.push(etape5(a, p));
+    parts.push(etape6());
+    parts.push(etape7());
+    parts.push(regles(p));
+    var texte = parts.filter(Boolean).join('\n\n').replace(/\n{3,}/g, '\n\n');
+    if (p === 'fichier' || p === 'factures') {
+      // Ces parcours n'ont pas d'étapes 3 et 4 : on renumérote 5, 6, 7 en 3, 4, 5.
+      texte = texte.replace(/([EÉ]tape|étape) ([567])/g, function (m, w, n) { return w + ' ' + (n - 2); })
+        .replace(/### 5([ab])\./g, '### 3$1.');
+    }
+    return { parcours: p, texte: texte };
+  }
+
+  return {
+    build: build, parcours: parcours, VERSION: VERSION, VERSION_DATE: VERSION_DATE,
+    TUTO_INSCRIPTION: TUTO_INSCRIPTION, TUTO_ACTIVATION: TUTO_ACTIVATION, TUTO_RESEAU: TUTO_RESEAU,
+    TUTO_LINKY: TUTO_LINKY, TUTO_PRM: TUTO_PRM, TUTO_VERIFIER_HORAIRE: TUTO_VERIFIER_HORAIRE
+  };
+})();
+if (typeof module !== 'undefined') module.exports = EMC;
+
+</script>
+<script>
+(function () {
+  var OFFRES = [["EDF", [["edf-tarif-bleu-base", "Tarif Bleu – Base"], ["edf-tarif-bleu-hphc", "Tarif Bleu – HP/HC"], ["edf-tempo", "Tarif Bleu Tempo"], ["edf-zen-online-base", "Zen Online – Base"], ["edf-zen-online-hphc", "Zen Online – HP/HC"], ["edf-zen-fixe-base", "Zen Fixe – Base"], ["edf-zen-fixe-hphc", "Zen Fixe – HP/HC"], ["edf-vert-electrique-base", "Vert Électrique – Base"], ["edf-vert-electrique-hphc", "Vert Électrique – HP/HC"], ["edf-zen-week-end", "Zen Week-End"], ["edf-zen-week-end-plus", "Zen Week-End Plus"], ["edf-vert-electrique-week-end", "Vert Électrique Week-End"], ["edf-zen-flex", "Zen Flex"], ["edf-zen-estival", "Zen Estival"]]], ["Octopus Energy", [["octopus-octosaisons", "OctoSaisons"], ["octopus-eco-fixe-base", "Eco Fixe Base (2 saisons)"], ["octopus-eco-fixe-2-saisons", "Eco Fixe HP/HC (2 saisons)"], ["octopus-intelligent-base", "Intelligent Octopus – Base"], ["octopus-intelligent-hphc", "Intelligent Octopus – HP/HC"]]], ["Gaz de Bordeaux", [["gaz-de-bordeaux-novafixe-bonus-base", "Novafixe Bonus Élec – Base"], ["gaz-de-bordeaux-novafixe-base", "Novafixe Élec – Base"], ["gaz-de-bordeaux-novafixe-bonus-hphc", "Novafixe Bonus Élec – HP/HC"], ["gaz-de-bordeaux-novafixe-hphc", "Novafixe Élec – HP/HC"]]], ["TotalEnergies", [["totalenergies-access-base", "Access Électricité – Base"], ["totalenergies-access-hphc", "Access Électricité – HP/HC"]]], ["GEG", [["geg-elec-verte-fixe-3-ans-base", "Mon Offre Elec Verte – Fixe 3 ans – Base"], ["geg-elec-verte-fixe-3-ans-hphc", "Mon Offre Elec Verte – Fixe 3 ans – HP/HC"]]], ["Plenitude", [["plenitude-pleniweb-base", "PleniWeb 1 an – Base"], ["plenitude-pleniweb-hphc", "PleniWeb 1 an – HP/HC"]]], ["Dyneff", [["dyneff-contrat-plus-base", "Contrat+ Électricité – Base"], ["dyneff-contrat-plus-hphc", "Contrat+ Électricité – HP/HC"]]], ["Primeo Énergie", [["primeo-essentielle-verte-base", "Essentielle Verte – Base"], ["primeo-essentielle-verte-hphc", "Essentielle Verte – HP/HC"]]], ["Alterna", [["alterna-fixe-1-an-base", "Mon électricité française – Fixe 1 an – Base"], ["alterna-fixe-1-an-hphc", "Mon électricité française – Fixe 1 an – HP/HC"]]], ["Alpiq", [["alpiq-horizon-base", "Électricité Horizon – Base"], ["alpiq-horizon-hphc", "Électricité Horizon – HP/HC"]]], ["Ekwateur", [["ekwateur-renouvelable-europe-base", "Électricité 100 % renouvelable Europe"], ["ekwateur-renouvelable-france-base", "Électricité 100 % renouvelable France"], ["ekwateur-hphc", "Électricité 100 % renouvelable"]]], ["La Bellenergie", [["la-bellenergie-prudence-base", "Prudence"]]], ["Mint Énergie", [["mint-base", "Online & Green – Base"], ["mint-hphc", "Online & Green – HP/HC"]]], ["OHM Énergie", [["ohm-serenite-fixe-base", "OHM Sérénité Fixe 1 an"]]], ["Happ-e", [["happ-e-1-an-base", "Électricité 1 an – Base"], ["happ-e-1-an-hphc", "Électricité 1 an – HP/HC"]]], ["Engie", [["engie-elec-reference-3-ans-base", "Elec Référence 3 ans"]]], ["ilek", [["ilek-enrfixe-plus-base", "ÉnRFixe+ Élec"]]], ["Enercoop", [["enercoop-base", "Offre Base"], ["enercoop-hphc", "Offre Heures creuses"]]], ["Urban Solar", [["urban-solar-base", "Électricité avec stockage virtuel"]]], ["LLUM", [["llum-particuliers-base", "Électricité Particuliers"]]]];
+  var EXTRA = ['Vattenfall', 'Wekiwi'];
+  var KEY = 'emc-reponses-v5';
+  var form = document.getElementById('questionnaire');
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Tutoriels (même texte que dans le prompt)
+  function fillList(cls, items) { document.querySelectorAll('ol.' + cls).forEach(function (ol) { ol.innerHTML = ''; items.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; ol.appendChild(li); }); }); }
+  fillList('tuto-inscription', EMC.TUTO_INSCRIPTION);
+  fillList('tuto-activation', EMC.TUTO_ACTIVATION);
+  document.querySelectorAll('.tuto-prm').forEach(function (p) { p.textContent = EMC.TUTO_PRM; });
+  $('tuto-reseau').textContent = EMC.TUTO_RESEAU;
+  $('tuto-linky').textContent = EMC.TUTO_LINKY;
+  $('tuto-verif').textContent = EMC.TUTO_VERIFIER_HORAIRE;
+  $('tuto-verif-2').textContent = EMC.TUTO_VERIFIER_HORAIRE;
+
+  // Fournisseurs et offres
+  var fsel = $('fournisseur');
+  function opt(sel, v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); }
+  opt(fsel, '', 'Choisir…');
+  var noms = OFFRES.map(function (x) { return x[0]; }).concat(EXTRA).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+  noms.forEach(function (n) { opt(fsel, n, n); });
+  opt(fsel, '__autre', 'Autre…');
+  function fillOffres() {
+    var osel = $('offre'), cur = osel.value, f = fsel.value;
+    osel.innerHTML = '';
+    opt(osel, '', 'Choisir…');
+    var e = OFFRES.filter(function (x) { return x[0] === f; })[0];
+    if (e) e[1].forEach(function (o) { opt(osel, o[1], o[1]); });
+    opt(osel, '__autre', e ? 'Autre offre…' : 'Préciser l\'offre…');
+    opt(osel, 'nsp', 'Je ne sais pas');
+    if (Array.prototype.some.call(osel.options, function (o) { return o.value === cur; })) osel.value = cur;
+  }
+
+  // Périodes proposées, calculées à partir d'aujourd'hui
+  function iso(d) { return d.toISOString().slice(0, 10); }
+  function fr(s) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  var t = new Date(); var today = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()));
+  var f1 = new Date(today); f1.setUTCDate(f1.getUTCDate() - 2);
+  var d1 = new Date(f1); d1.setUTCFullYear(d1.getUTCFullYear() - 1); d1.setUTCDate(d1.getUTCDate() + 1);
+  var f2 = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0));
+  var d2 = new Date(Date.UTC(f2.getUTCFullYear() - 1, f2.getUTCMonth() + 1, 1));
+  var y = today.getUTCFullYear() - 1;
+  var PERIODES = [
+    ['p1', iso(d1), iso(f1), '12 derniers mois'],
+    ['p2', iso(d2), iso(f2), '12 derniers mois complets'],
+    ['p3', y + '-01-01', y + '-12-31', 'Année ' + y]
+  ];
+  var pbox = $('periodes');
+  PERIODES.forEach(function (p, i) {
+    var l = document.createElement('label'); l.className = 'chip';
+    l.innerHTML = '<input type="radio" name="periode" id="periode-' + p[0] + '" value="' + p[0] + '"><span></span>';
+    l.querySelector('span').textContent = p[3] + ' · ' + fr(p[1]) + ' → ' + fr(p[2]) + (i === 0 ? ' (conseillé)' : '');
+    pbox.appendChild(l);
+  });
+  var lp = document.createElement('label'); lp.className = 'chip';
+  lp.innerHTML = '<input type="radio" name="periode" id="periode-perso" value="perso"><span>Autres dates</span>';
+  pbox.appendChild(lp);
+
+  // Lecture des réponses
+  function val(name) {
+    var els = form.querySelectorAll('[name="' + name + '"]');
+    if (!els.length) return '';
+    if (els[0].type === 'radio') { var c = form.querySelector('[name="' + name + '"]:checked'); return c ? c.value : ''; }
+    return els[0].value.trim();
+  }
+  function lire() {
+    var r = {};
+    ['loc', 'reseau', 'eld_export', 'linky', 'compte', 'horaire', 'appareil', 'chauffage', 'kva', 'activation', 'kwh_total', 'kwh_hc', 'montant'].forEach(function (k) { r[k] = val(k); });
+    var f = val('fournisseur'); r.fournisseur = f === '__autre' ? val('fournisseur_autre') : f;
+    var o = val('offre'); r.offre = o === '__autre' ? val('offre_autre') : (o === 'nsp' ? '' : o);
+    var p = val('periode');
+    if (p === 'perso') { r.debut = val('debut'); r.fin = val('fin'); }
+    else { var e = PERIODES.filter(function (x) { return x[0] === p; })[0]; if (e) { r.debut = e[1]; r.fin = e[2]; } }
+    return r;
+  }
+  // Réponses utiles au prompt : on retire celles des questions masquées
+  function nettoyer(r, pc) {
+    var a = {}; for (var k in r) if (r[k]) a[k] = r[k];
+    if (a.loc === 'corse' || a.loc === 'dom') return { loc: a.loc };
+    if (a.reseau !== 'eld') delete a.eld_export;
+    if (a.reseau === 'eld' || a.linky === 'non') { delete a.compte; delete a.horaire; delete a.appareil; delete a.activation; }
+    if (a.horaire !== 'moins12') delete a.activation;
+    if (pc === 'factures') { delete a.debut; delete a.fin; } else { delete a.kwh_total; delete a.kwh_hc; }
+    if (!(pc === 'factures' || a.horaire === 'non')) delete a.chauffage;
+    return a;
+  }
+
+  // Affichage conditionnel : data-show="cle=v1|v2" ou "cle!=v"
+  function visible(rule, ctx) {
+    var neg = rule.indexOf('!=') > -1, parts = rule.split(neg ? '!=' : '='), v = ctx[parts[0]] || '';
+    var ok = parts[1].split('|').indexOf(v) > -1;
+    return neg ? !ok : ok;
+  }
+
+  var copyBtn = $('copy-btn'), view = $('prompt-view'), courant = '';
+  function rendre() {
+    var r = lire();
+    var pc = EMC.parcours(r);
+    var a = nettoyer(r, pc);
+    pc = EMC.parcours(a);
+    var ctx = Object.assign({}, r, {
+      parcours: pc === 'fichier' && a.reseau !== 'eld' ? 'fichier-enedis' : (pc || ''),
+      periode: val('periode'), fournisseur: val('fournisseur'), offre: val('offre'),
+      estime: (pc === 'factures' || r.horaire === 'non') ? '1' : ''
+    });
+    document.querySelectorAll('[data-show]').forEach(function (el) { el.hidden = !visible(el.getAttribute('data-show'), ctx); });
+    // Blocs et questions qui dépendent de plusieurs réponses
+    var hors = (pc === 'horszone');
+    $('q-reseau').hidden = hors;
+    $('q-linky').hidden = hors;
+    $('b2').hidden = hors || r.reseau === 'eld' || r.linky === 'non';
+    $('b3').hidden = hors;
+    $('q-periode').hidden = (pc === 'factures');
+    $('b3n').textContent = $('b2').hidden ? '2 / 2' : '3 / 3';
+    if (!$('b2').hidden) $('b1').querySelector('.n').textContent = '1 / 3'; else $('b1').querySelector('.n').textContent = '1 / 2';
+
+    // Verdict
+    var v = $('verdict'), box = $('prompt-box'), launch = $('launch');
+    var titre, pill, cls = '', desc, prep = [];
+    if (pc === 'horszone') {
+      pill = 'Hors zone'; cls = 'stop'; titre = 'Pas de comparatif possible pour ce logement';
+      desc = "En Corse et outre-mer, le réseau est géré par EDF SEI et la base de prix ne couvre que la France continentale.";
+    } else if (pc === null) {
+      pill = 'Prompt complet'; titre = 'Répondez au questionnaire, ou copiez le prompt complet';
+      desc = "Sans réponse, le prompt pose lui-même toutes les questions au début de la conversation, avec les tutoriels, et choisit le bon parcours.";
+    } else if (pc === 'factures') {
+      pill = 'Analyse estimée'; cls = 'est'; titre = 'Estimation à partir de vos factures';
+      desc = "Votre consommation totale est réelle, sa répartition dans l'année et dans la journée est estimée. Les offres Base et heures creuses sont assez fiables, Tempo et les offres à saisons beaucoup moins.";
+      prep = ['Votre dernière facture de régularisation annuelle (vous pouvez la joindre à la conversation).'];
+    } else if (pc === 'fichier') {
+      pill = a.horaire === 'non' ? 'Analyse estimée' : 'Analyse sur fichiers'; cls = a.horaire === 'non' ? 'est' : '';
+      titre = a.reseau === 'eld' ? 'Analyse à partir de l\'export de votre gestionnaire' : 'Analyse à partir des fichiers téléchargés sur Enedis';
+      desc = "Vous téléchargez votre consommation et vous joignez les fichiers à la conversation. Claude les lit, puis fait le même calcul qu'avec l'accès direct.";
+      prep = a.reseau === 'eld' ? ['Les fichiers de consommation heure par heure sur 12 mois, téléchargés dans l\'espace client de votre gestionnaire de réseau.'] :
+        ['Sur mon-compte-particulier.enedis.fr : suivi de vos mesures, consommation horaire, « Télécharger mes données » en Excel. Faites plusieurs téléchargements si la durée est limitée.'];
+    } else {
+      var h = a.horaire;
+      pill = h === 'plus12' ? 'Analyse complète' : h === 'moins12' ? 'Analyse partielle' : h === 'non' ? 'Analyse estimée' : 'Analyse automatique';
+      cls = (h === 'non') ? 'est' : '';
+      titre = h === 'plus12' ? 'Votre consommation réelle, heure par heure, sur 12 mois' :
+        h === 'moins12' ? 'Heure par heure depuis l\'activation, complété par la consommation par jour' :
+        h === 'non' ? 'À partir de votre consommation par jour' : 'Claude teste vos données et choisit le meilleur calcul possible';
+      desc = "Claude ouvre votre espace Enedis dans le navigateur intégré de l'application, vous vous connectez vous-même, et il récupère vos mesures en 3 à 4 minutes.";
+      if (h === 'non') desc += " Les kWh de chaque jour sont réels ; leur répartition entre heures pleines et creuses est estimée. Activez la consommation horaire aujourd'hui pour une analyse complète dans un an.";
+      prep = ['Vos identifiants Enedis.'];
+      if (a.compte === 'non') prep.unshift('Votre compte Enedis créé et votre compteur ajouté (tutoriel ci-dessus).');
+    }
+    v.innerHTML = '';
+    var ps = document.createElement('span'); ps.className = 'pill ' + cls; ps.textContent = pill; v.appendChild(ps);
+    var h3 = document.createElement('h3'); h3.textContent = titre; v.appendChild(h3);
+    var pd = document.createElement('p'); pd.textContent = desc; v.appendChild(pd);
+    if (prep.length) { var ul = document.createElement('ul'); prep.forEach(function (x) { var li = document.createElement('li'); li.textContent = 'À préparer : ' + x; ul.appendChild(li); }); v.appendChild(ul); }
+
+    var res = EMC.build(a);
+    courant = res.texte;
+    box.hidden = (pc === 'horszone');
+    view.textContent = courant;
+    var n = Object.keys(a).length;
+    $('prompt-meta').textContent = 'Version ' + EMC.VERSION + ' · ' + (n ? n + ' réponse' + (n > 1 ? 's' : '') + ' intégrée' + (n > 1 ? 's' : '') : 'version complète');
+    $('progress').textContent = n ? n + ' réponse' + (n > 1 ? 's' : '') + ' · le prompt se met à jour à chaque clic' : 'Le prompt plus bas se met à jour à chaque réponse.';
+
+    // Étapes pour lancer
+    var desktop = (pc === 'enedis');
+    var steps = [
+      ['Copiez le prompt', 'Avec le bouton ci-dessus.'],
+      [desktop ? 'Ouvrez une nouvelle conversation dans l\'application Claude sur ordinateur' : 'Ouvrez une nouvelle conversation dans Claude', desktop ? 'Là où le navigateur intégré est disponible. Collez le prompt et envoyez.' : (pc === 'factures' ? 'Collez le prompt, joignez votre facture si vous l\'avez, et envoyez.' : 'Collez le prompt, joignez vos fichiers de consommation, et envoyez.')],
+      ['Répondez aux questions qui manquent', 'Claude ne vous repose pas celles du questionnaire.']
+    ];
+    if (desktop) steps.push(['Connectez-vous à Enedis dans le panneau navigateur', 'Vous saisissez vous-même identifiant, mot de passe et code, puis vous dites à Claude que c\'est fait.']);
+    steps.push(['Lisez le résultat', 'Offres classées du moins cher au plus cher, écart avec votre contrat (🟢 moins cher, 🔴 plus cher), détail Tempo et OctoSaisons, points à retenir et sources.']);
+    launch.innerHTML = '';
+    launch.hidden = (pc === 'horszone');
+    steps.forEach(function (s) { var li = document.createElement('li'); var d = document.createElement('div'); var st = document.createElement('strong'); st.textContent = s[0]; var p = document.createElement('p'); p.textContent = s[1]; d.appendChild(st); d.appendChild(p); li.appendChild(d); launch.appendChild(li); });
+
+    sauver();
+  }
+
+  // Mémoire locale des réponses (confort, facultatif)
+  function sauver() {
+    try {
+      var s = {};
+      form.querySelectorAll('input, select').forEach(function (el) {
+        if (!el.name) return;
+        if (el.type === 'radio') { if (el.checked) s[el.name] = el.value; } else if (el.value) s[el.name] = el.value;
+      });
+      localStorage.setItem(KEY, JSON.stringify(s));
+    } catch (e) {}
+  }
+  function charger() {
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    if (!s) return;
+    Object.keys(s).forEach(function (k) {
+      var els = form.querySelectorAll('[name="' + k + '"]');
+      els.forEach(function (el) { if (el.type === 'radio') el.checked = (el.value === s[k]); });
+      if (els.length && els[0].type !== 'radio') { if (k === 'offre') fillOffres(); els[0].value = s[k]; }
+      if (k === 'fournisseur') fillOffres();
+    });
+    if (s.offre) $('offre').value = s.offre;
+  }
+
+  fillOffres();
+  charger();
+  fillOffres();
+  try { var s0 = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s0 && s0.offre) $('offre').value = s0.offre; } catch (e) {}
+  form.addEventListener('change', function (e) { if (e.target.id === 'fournisseur') fillOffres(); rendre(); });
+  form.addEventListener('input', function (e) { if (e.target.type !== 'radio' && e.target.tagName !== 'SELECT') rendre(); });
+  $('reset').addEventListener('click', function () {
+    form.querySelectorAll('input').forEach(function (el) { if (el.type === 'radio') el.checked = false; else el.value = ''; });
+    form.querySelectorAll('select').forEach(function (el) { el.value = ''; });
+    fillOffres();
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    rendre();
+  });
+
+  copyBtn.addEventListener('click', function () {
+    var done = function () { copyBtn.textContent = 'Copié'; copyBtn.dataset.done = '1'; setTimeout(function () { copyBtn.textContent = 'Copier le prompt'; copyBtn.dataset.done = ''; }, 2500); };
+    var fallback = function () { var rg = document.createRange(); rg.selectNodeContents(view); var s = window.getSelection(); s.removeAllRanges(); s.addRange(rg); copyBtn.textContent = 'Texte sélectionné : Ctrl+C'; };
+    try { navigator.clipboard.writeText(courant).then(done, fallback); } catch (e) { fallback(); }
+  });
+  var exp = $('expand-btn');
+  exp.addEventListener('click', function () { var open = view.style.maxHeight === 'none'; view.style.maxHeight = open ? '' : 'none'; exp.textContent = open ? 'Afficher en entier' : 'Réduire'; });
+
+  rendre();
+
+  // Courbe d'exemple : 24 heures, HC 22h-6h
+  var kwh = [0.55,0.48,0.42,0.40,0.38,0.45,0.70,0.95,0.80,0.55,0.50,0.62,0.85,0.60,0.48,0.46,0.58,0.90,1.35,1.55,1.30,1.05,1.20,0.75];
+  var svg = $('curve'), W = 480, top = 6, base = 100, max = 1.6, bw = W / 24, html = '';
+  var cs = getComputedStyle(document.documentElement);
+  var cHc = cs.getPropertyValue('--hc').trim() || '#2F6F8F', cHp = cs.getPropertyValue('--accent').trim() || '#B8CC1F', cTx = cs.getPropertyValue('--meter-text').trim() || '#9DB0AA', cLn = cs.getPropertyValue('--meter-line').trim() || '#2C4048';
+  for (var h = 0; h < 24; h++) {
+    var hc = (h >= 22 || h < 6), bh = (kwh[h] / max) * (base - top);
+    html += '<rect class="bar" x="' + (h * bw + 2).toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + (bw - 4).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="2" fill="' + (hc ? cHc : cHp) + '" style="animation-delay:' + (h * 25) + 'ms"></rect>';
+  }
+  html += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="' + cLn + '" stroke-width="1"></line>';
+  [0, 6, 12, 18, 23].forEach(function (h) { html += '<text x="' + (h * bw + bw / 2).toFixed(1) + '" y="116" text-anchor="middle" fill="' + cTx + '" font-family="IBM Plex Mono, monospace" font-size="11">' + h + 'h</text>'; });
+  svg.innerHTML = html;
+})();
+</script>
+
+
+</body>
+</html>
