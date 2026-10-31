@@ -291,9 +291,11 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
           <legend>Avez-vous un compte sur l'espace client Enedis&nbsp;?</legend>
           <div class="chips">
             <label class="chip"><input type="radio" name="compte" id="compte-oui" value="oui"><span>Oui</span></label>
-            <label class="chip"><input type="radio" name="compte" id="compte-non" value="non"><span>Non</span></label>
+            <label class="chip"><input type="radio" name="compte" id="compte-non" value="non"><span>Non, je le crée</span></label>
+            <label class="chip"><input type="radio" name="compte" id="compte-annuel" value="annuel"><span>Je préfère indiquer ma consommation annuelle</span></label>
           </div>
           <p class="hint">mon-compte-particulier.enedis.fr, gratuit, différent de l'espace de votre fournisseur.</p>
+          <div class="callout info" data-show="compte=annuel"><p>D'accord : vous indiquerez votre consommation de l'année en kWh plus bas. Le classement sera <strong>approximatif</strong> pour Tempo et les offres à saisons.</p></div>
           <div class="callout info" data-show="compte=non">
             <p><strong>Créez votre compte (5 minutes)</strong></p>
             <ol class="tuto-inscription"></ol>
@@ -327,7 +329,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
             <label class="chip"><input type="radio" name="appareil" id="appareil-desktop" value="desktop"><span>Application Claude sur ordinateur</span></label>
             <label class="chip"><input type="radio" name="appareil" id="appareil-web" value="web"><span>Claude sur le web ou sur mobile</span></label>
           </div>
-          <p class="hint">Sur ordinateur, Claude récupère vos mesures tout seul. Ailleurs, vous joignez vos fichiers Enedis.</p>
+          <p class="hint">Sur ordinateur, Claude récupère vos mesures tout seul. Ailleurs, vous indiquez votre consommation annuelle (classement approximatif).</p>
         </fieldset>
       </div>
 
@@ -382,7 +384,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
           <div class="field">
             <label for="kwh_total">Consommation annuelle (kWh)</label>
             <input type="number" id="kwh_total" name="kwh_total" min="0" step="1" inputmode="numeric" placeholder="ex. 4 500">
-            <p class="hint">Sur votre facture de régularisation annuelle.</p>
+            <p class="hint">Facture de régularisation, ou espace client de votre fournisseur. Vide : Claude vous aidera à l'estimer.</p>
           </div>
           <div class="field">
             <label for="kwh_hc">Dont heures creuses (kWh, facultatif)</label>
@@ -478,7 +480,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 // Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
 // a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
 var EMC = (function () {
-  var VERSION = 'v6';
+  var VERSION = 'v7';
   var VERSION_DATE = '31 oct. 2026';
 
   var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
@@ -511,9 +513,9 @@ var EMC = (function () {
     reseau: { enedis: 'Enedis', eld: 'une entreprise locale de distribution', nsp: 'je ne sais pas' },
     eld_export: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' },
     linky: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' },
-    compte: { oui: 'oui', non: "non, je le crée en suivant le tutoriel" },
+    compte: { oui: 'oui', non: "non, je le crée en suivant le tutoriel", annuel: "je préfère ne pas l'utiliser et indiquer ma consommation annuelle" },
     horaire: { plus12: 'oui, depuis plus de 12 mois', moins12: 'oui, depuis moins de 12 mois', non: 'non', nsp: 'je ne sais pas' },
-    appareil: { desktop: "application Claude sur ordinateur, avec le navigateur intégré", web: 'Claude sur le web ou sur mobile (je joindrai des fichiers)' },
+    appareil: { desktop: "application Claude sur ordinateur, avec le navigateur intégré", web: "Claude sur le web ou sur mobile (pas d'accès à l'espace Enedis : j'indique ma consommation annuelle)" },
     chauffage: { oui: 'oui', non: 'non', nsp: 'je ne sais pas' }
   };
 
@@ -522,13 +524,14 @@ var EMC = (function () {
     if (a.loc === 'corse' || a.loc === 'dom') return 'horszone';
     if (a.reseau === 'eld') return a.eld_export === 'oui' ? 'fichier' : 'factures';
     if (a.linky === 'non') return 'factures';
+    if (a.compte === 'annuel') return 'factures';
     if (!a.loc && !a.reseau && !a.linky && !a.appareil) return null;
-    if (a.appareil === 'web') return 'fichier';
+    if (a.appareil === 'web') return 'factures';
     return 'enedis';
   }
 
   function precision(a, p) {
-    if (p === 'factures') return 'estimée (factures)';
+    if (p === 'factures') return 'approximative (consommation annuelle)';
     if (a.horaire === 'plus12') return 'complète (heure par heure)';
     if (a.horaire === 'moins12') return 'partielle (heure par heure sur une partie de la période)';
     if (a.horaire === 'non') return 'estimée (consommation par jour)';
@@ -546,6 +549,7 @@ var EMC = (function () {
     add('Gestionnaire de réseau', LIBELLES.reseau[a.reseau]);
     if (a.reseau === 'eld') add('Mon gestionnaire permet de télécharger ma consommation horaire', LIBELLES.eld_export[a.eld_export]);
     add('Compteur Linky', LIBELLES.linky[a.linky]);
+    if (a.compte === 'annuel') add('Espace client Enedis', LIBELLES.compte.annuel);
     if (p === 'enedis' || p === 'fichier') {
       if (a.reseau !== 'eld') add('Compte client Enedis', LIBELLES.compte[a.compte]);
       if (a.reseau !== 'eld') add('Consommation horaire activée', LIBELLES.horaire[a.horaire]);
@@ -575,24 +579,24 @@ var EMC = (function () {
   var Q_OFFRE = "Offre actuelle, une fois le fournisseur connu — prends ses offres dans la base ElecMoinsChere (étape 5), complète au besoin par une recherche web. Chaque choix a pour libellé l'offre et son option (par exemple chez EDF : « Tarif Bleu HP/HC », « Tarif Bleu Base », « Tempo », puis en pages suivantes Zen Fixe, Zen Online, Zen Week-End, Vert Électrique…), et pour description une courte précision (prix fixe ou indexé). Range les offres de la plus courante à la plus rare, en pages avec « Voir plus d'offres… » au-delà de 4.";
   var Q_MONTANT = "Montant réellement payé sur la période (facultatif, uniquement pour contrôle) — choix : « Je ne le connais pas », « Je le connais » ; je peux taper le montant directement dans « Autre ». Si je choisis « Je le connais » sans montant, demande-le dans une seule question et attends ma réponse.";
   var Q_CHAUFFAGE = "Chauffage électrique (radiateurs, pompe à chaleur ou chaudière électrique) — choix : Oui, Non, Je ne sais pas. Sert à estimer la répartition de ma consommation sur l'année et les jours rouges.";
-  var Q_FACTURES = "Consommation annuelle (sur ma dernière facture de régularisation ou dans l'espace client de mon fournisseur) — je tape le total en kWh dans « Autre », avec la part en heures creuses si je l'ai ; choix proposé : « Je vais joindre une facture » (dans ce cas, lis-la et prends-y le total, la part en heures creuses, la puissance et l'offre).";
+  var Q_FACTURES = "Consommation annuelle en kWh — précise en description où la trouver : facture de régularisation annuelle, ou rubrique consommation de l'espace client ou de l'application de mon fournisseur. Je tape le total dans « Autre », avec la part en heures creuses si je l'ai. Choix proposés : « Je vais joindre une facture » (lis-la et prends-y le total, la part en heures creuses, la puissance et l'offre) ; « Je ne la connais pas » (propose alors des ordres de grandeur à choisir : environ 2 500 kWh pour un petit logement sans chauffage électrique, 4 500 kWh pour un logement moyen ou avec chauffe-eau électrique, 8 000 kWh ou plus avec chauffage électrique, et préviens-moi que le classement sera encore plus approximatif).";
 
   function etape1(a, p) {
     var out = [];
     if (p === null) {
       out.push("## Étape 1 — Vérifier ma situation, puis me poser les questions (avant toute action)\n");
       out.push(REGLES_CHOIX + "\n");
-      out.push("Vérifie toi-même, sans me le demander, si le navigateur intégré de l'application Claude est disponible dans cette conversation (outils de navigation dans le panneau navigateur). S'il ne l'est pas, le parcours Enedis automatique est impossible : utilise alors le parcours B (fichiers joints).\n");
+      out.push("Vérifie toi-même, sans me le demander, si le navigateur intégré de l'application Claude est disponible dans cette conversation (outils de navigation dans le panneau navigateur). S'il ne l'est pas, le parcours Enedis automatique est impossible : utilise alors le parcours C (consommation annuelle).\n");
       out.push("Premier envoi — ma situation, trois questions ensemble :\n");
       out.push("1. Où se trouve le logement ? — choix : France métropolitaine continentale, Corse, Outre-mer. Corse ou outre-mer : arrête-toi et explique que la base de prix ne couvre que la France continentale, où se trouvent presque toutes les offres de marché ; le réseau y est géré par EDF SEI.");
       out.push("2. Qui gère votre réseau électrique ? — choix : Enedis, Une entreprise locale (Strasbourg, Grenoble, Metz, Vienne, Deux-Sèvres, SICAE…), Je ne sais pas. Mets cette astuce dans la description : « " + TUTO_RESEAU + " » « Je ne sais pas » : continue comme pour Enedis ; si mon compteur est introuvable dans l'espace Enedis, c'est que je dépends d'une entreprise locale.");
       out.push("3. Avez-vous un compteur Linky ? — choix : Oui, Non, Je ne sais pas. Astuce en description : « " + TUTO_LINKY + " » « Je ne sais pas » : continue, le test de l'étape 3 tranchera.\n");
       out.push("Selon les réponses, choisis le parcours :");
-      out.push("- Entreprise locale : demande si son espace client permet de télécharger la consommation heure par heure (Oui / Non / Je ne sais pas). Oui → parcours B (fichiers joints), en m'expliquant de télécharger l'export dans l'espace client de mon gestionnaire. Non ou je ne sais pas → parcours C (factures).");
-      out.push("- Pas de Linky → parcours C (factures).");
-      out.push("- Enedis (ou je ne sais pas) avec Linky → parcours A si le navigateur intégré est disponible, sinon parcours B avec l'export Enedis.\n");
-      out.push("Deuxième envoi — accès à mes données (parcours A et B avec Enedis), deux questions ensemble :\n");
-      out.push("4. Avez-vous un compte sur l'espace client Enedis (mon-compte-particulier.enedis.fr) ? — choix : Oui, Non. Si Non, affiche-moi ce tutoriel dans un message, puis attends que je réponde « compte créé » :\n" + liste(TUTO_INSCRIPTION) + "\n   Astuce PRM : " + TUTO_PRM);
+      out.push("- Entreprise locale : demande si son espace client permet de télécharger la consommation heure par heure (Oui / Non / Je ne sais pas). Oui → parcours B (fichiers joints), en m'expliquant de télécharger l'export dans l'espace client de mon gestionnaire. Non ou je ne sais pas → parcours C (consommation annuelle).");
+      out.push("- Pas de Linky → parcours C (consommation annuelle).");
+      out.push("- Enedis (ou je ne sais pas) avec Linky → parcours A si le navigateur intégré est disponible, sinon parcours C (consommation annuelle).\n");
+      out.push("Deuxième envoi — accès à mes données (parcours A seulement), deux questions ensemble :\n");
+      out.push("4. Avez-vous un compte sur l'espace client Enedis (mon-compte-particulier.enedis.fr) ? — choix : Oui ; Non, je le crée ; Je préfère indiquer ma consommation annuelle (description : plus rapide, classement approximatif). « Je préfère indiquer ma consommation annuelle » → parcours C, sans poser la question 5. « Non, je le crée » : affiche-moi ce tutoriel dans un message, puis attends que je réponde « compte créé » :\n" + liste(TUTO_INSCRIPTION) + "\n   Astuce PRM : " + TUTO_PRM);
       out.push("5. La consommation heure par heure est-elle activée dans votre espace Enedis ? — choix : Oui, depuis plus de 12 mois ; Oui, depuis moins de 12 mois ; Non ; Je ne sais pas. Mets cette astuce en description : « " + TUTO_VERIFIER_HORAIRE + " » Si Non, affiche ce tutoriel, conseille-moi de l'activer aujourd'hui pour la prochaine fois, et continue avec une analyse estimée à partir de la consommation par jour :\n" + liste(TUTO_ACTIVATION) + "\n   « Je ne sais pas » : continue, le test de l'étape 3 tranchera.\n");
       out.push("Troisième envoi — mon contrat :\n");
       out.push("6. " + Q_PUISSANCE);
@@ -622,7 +626,7 @@ var EMC = (function () {
       out.push("Questions qui manquent :\n");
       Q.forEach(function (q, i) { out.push((i + 1) + '. ' + q); });
     }
-    if (p === 'enedis') out.push("\nVérifie aussi, sans me le demander, que le navigateur intégré de l'application Claude est disponible. S'il ne l'est pas, dis-le-moi et passe au parcours par fichiers : explique-moi comment télécharger mes données Enedis (étape 2 bis) et lis les fichiers que je joins.");
+    if (p === 'enedis') out.push("\nVérifie aussi, sans me le demander, que le navigateur intégré de l'application Claude est disponible. S'il ne l'est pas, dis-le-moi et passe à l'étape 2 bis (consommation annuelle).");
     return out.join('\n');
   }
 
@@ -645,10 +649,10 @@ var EMC = (function () {
       "## Étape 2 — Ouvrir Enedis et me laisser me connecter\n",
       "- Ouvre https://mon-compte-particulier.enedis.fr/ dans le navigateur intégré de l'application Claude. Si le site n'est pas encore autorisé, demande l'accès au site.",
       "- Vérifie si le panneau du navigateur est affiché. S'il est masqué, dis-moi de l'afficher (Ctrl+Maj+B sur Windows, Cmd+Maj+B sur Mac).",
-      "- Demande-moi de me connecter moi-même. Tu ne saisis jamais mes identifiants, mon mot de passe ni un code de vérification. Attends que je confirme.",
+      "- Demande-moi de me connecter moi-même. Tu ne saisis jamais mes identifiants, mon mot de passe ni un code de vérification. Attends que je confirme. Propose aussi un choix « Je préfère indiquer ma consommation annuelle » : si je le choisis, ou si la connexion échoue, passe à l'étape 2 bis.",
       "- Vérifie la connexion en exécutant du JavaScript dans la page : GET https://alex.microapplications.enedis.fr/mon-compte/api/private/v2/userinfos?espace=PARTICULIER (avec credentials:'include'). La réponse donne idPersonne et cnAlex. En cas d'erreur 401 ou 403, demande-moi de me reconnecter.\n",
       "## Étape 3 — Récupérer mes informations de compteur et tester mes données\n",
-      "- Liste des PRM : GET https://alex.microapplications.enedis.fr/mes-prms-part/api/private/v2/personnes/{cnAlex}/prms. S'il y a plusieurs PRM, demande-moi lequel utiliser (avec l'outil de questions à choix). Si la liste est vide, mon compteur n'est pas rattaché : remets-moi l'étape « Ajoutez votre compteur » du tutoriel d'inscription avec l'astuce PRM, et attends. Si je dépends en fait d'une entreprise locale, passe au parcours C (factures).",
+      "- Liste des PRM : GET https://alex.microapplications.enedis.fr/mes-prms-part/api/private/v2/personnes/{cnAlex}/prms. S'il y a plusieurs PRM, demande-moi lequel utiliser (avec l'outil de questions à choix). Si la liste est vide, mon compteur n'est pas rattaché : remets-moi l'étape « Ajoutez votre compteur » du tutoriel d'inscription avec l'astuce PRM, et attends. Si je dépends en fait d'une entreprise locale, passe à l'étape 2 bis (consommation annuelle).",
       "- Détail du PRM : GET .../mes-prms-part/api/private/v2/personnes/{cnAlex}/prms/{PRM}?embed=SITCOM%2CSYNCON. Récupère le champ programmationHoraireHC : c'est mon créneau réel d'heures creuses (par exemple « 22h-6h », ou deux plages). N'utilise jamais un créneau par défaut si le vrai est disponible. Si tu trouves la puissance souscrite (clé contenant « puissance », « kva » ou « calibre »), compare-la avec ma réponse ; sinon garde ma réponse sans me redemander.\n",
       "### Test — consommation horaire et quotidienne disponibles\n",
       "1. Indice : dans le JSON du détail du PRM, cherche toute clé ou valeur qui contient « courbe », « CDC », « collecte », « horaire », « journalier » ou « consentement », et montre-moi ce que tu trouves.",
@@ -659,7 +663,7 @@ var EMC = (function () {
       "   - consommation par heure sur une partie seulement → cas 4b ;",
       "   - pas de consommation par heure → cas 4c, et affiche ce message, simple et sans jargon (pas de code HTTP, pas de nom d'API) :\n",
       MSG_ACTIVATION + "\n",
-      "   - ni consommation par heure ni par jour → mon compteur n'est peut-être pas communicant : dis-le-moi, conseille de vérifier dans l'espace Enedis ou de contacter Enedis, et propose le parcours C (factures).",
+      "   - ni consommation par heure ni par jour → mon compteur n'est peut-être pas communicant : dis-le-moi, conseille de vérifier dans l'espace Enedis ou de contacter Enedis, et passe à l'étape 2 bis (consommation annuelle).",
       "   Tu ne modifies jamais toi-même l'activation dans mon espace Enedis.\n",
       "## Étape 4 — Télécharger ma consommation dans la page (sans fichier)\n",
       "Lance dans la page un script asynchrone qui tourne en arrière-plan, garde son état dans window.__enedis (statut, avancement, journal, erreurs), puis interroge cet état par attentes de 10 s maximum jusqu'à la fin. Préviens-moi de la durée au lancement : environ 3 à 5 s par tranche, soit 3 à 4 min pour un an. Pendant ce temps, avance sur l'étape 5.\n",
@@ -686,7 +690,7 @@ var EMC = (function () {
   function parcoursFichier(a, intro) {
     var eld = a.reseau === 'eld';
     var L = [];
-    L.push(intro ? "## Parcours B — Fichiers joints\n" : "");
+    L.push(intro ? "## Parcours B — Fichiers joints (entreprise locale de distribution)\n" : "");
     L.push("## Étape 2 — Récupérer ma consommation dans les fichiers joints\n");
     L.push("- Regarde si j'ai joint des fichiers de consommation (Excel, CSV ou ZIP) à la conversation. S'il n'y en a pas, explique-moi comment les obtenir, puis attends que je les joigne :");
     if (!eld) {
@@ -712,8 +716,9 @@ var EMC = (function () {
   function parcoursFactures(a, intro) {
     var ch = a.chauffage === 'oui' ? 'avec' : (a.chauffage === 'non' ? 'sans' : null);
     return [
-      intro ? "## Parcours C — Estimation à partir des factures\n" : "",
-      "## Étape 2 — Construire un profil estimé à partir de mes factures\n",
+      intro ? "## Parcours C — Classement approximatif à partir de la consommation annuelle\n" : "",
+      "## Étape 2 — Construire un profil estimé à partir de ma consommation annuelle\n",
+      "- Tu ne vas pas lire ma consommation sur le site Enedis. Si tu ne connais pas encore ma consommation annuelle, pose-moi cette question : " + Q_FACTURES,
       "- Données de départ : ma consommation annuelle totale en kWh, la part en heures creuses si je l'ai, ma puissance et mon offre. Si je joins une facture, lis-la pour y prendre ces informations, et montre-moi ce que tu as retenu.",
       "- Répartition par mois (% du total annuel, de janvier à décembre) :",
       "  - avec chauffage électrique : 15 ; 13 ; 11 ; 7 ; 5 ; 4 ; 4 ; 3,5 ; 4 ; 7 ; 12 ; 14,5 ;",
@@ -722,7 +727,7 @@ var EMC = (function () {
       "- Jours Tempo et rouges OctoSaisons : prends le vrai calendrier Tempo des 12 derniers mois (étape 5b). Un jour rouge ou blanc consomme 1,3 fois la moyenne du mois avec chauffage électrique, 1,1 fois sans ; un jour bleu prend le reste du mois. Part d'heures pleines ces jours-là : celle de l'année.",
       "- Week-end : consommation d'un jour de week-end = 1,15 fois celle d'un jour de semaine du même mois.",
       "- Construis à partir de ces règles les totaux par plage de l'étape 6, dans du code.",
-      "- Préviens-moi dès le début, puis dans le résultat, que l'analyse est estimée : les offres Base et HP/HC sont assez fiables (ma consommation totale est réelle), les offres à couleurs ou à saisons beaucoup moins. Pour une analyse précise, conseille-moi de demander un compteur Linky (s'il n'est pas posé), puis d'activer la consommation horaire."
+      "- Préviens-moi dès le début, puis dans le résultat, que le classement est approximatif : les offres Base et HP/HC sont assez fiables (ma consommation totale est réelle), les offres à couleurs ou à saisons beaucoup moins. Intitule le tableau final « Classement approximatif ». Pour une analyse précise, conseille-moi la version avec l'espace Enedis, dans l'application Claude sur ordinateur (avec un compteur Linky et la consommation horaire activée)."
     ].join('\n');
   }
 
@@ -793,20 +798,20 @@ var EMC = (function () {
     var src = {
       enedis: "Ma consommation vient de mon espace client Enedis, que tu ouvres dans le navigateur intégré de l'application Claude.",
       fichier: "Ma consommation vient des fichiers que je joins à la conversation (export de mon gestionnaire de réseau).",
-      factures: "Je n'ai pas de consommation heure par heure : tu estimes mon profil à partir de mes factures, et tu le dis clairement dans le résultat."
-    }[p] || "Selon ma situation (étape 1), ma consommation vient de mon espace client Enedis ouvert dans le navigateur intégré de l'application Claude (parcours A), de fichiers que je joins (parcours B), ou de mes factures (parcours C, estimation).";
+      factures: "Tu ne lis pas ma consommation sur le site Enedis : tu pars de ma consommation annuelle en kWh, tu estimes sa répartition et tu me donnes un classement approximatif, en le disant clairement."
+    }[p] || "Selon ma situation (étape 1), ma consommation vient de mon espace client Enedis ouvert dans le navigateur intégré de l'application Claude (parcours A, le plus précis), de fichiers exportés par mon gestionnaire de réseau local (parcours B), ou de ma consommation annuelle en kWh (parcours C, classement approximatif).";
     var parts = [];
     parts.push("Tu vas calculer combien me coûterait un an de ma consommation électrique réelle chez les principaux fournisseurs d'électricité en France, et comparer avec mon contrat actuel. " + src + " Les prix viennent de la base ElecMoinsChere, mise à jour chaque jour. Suis les étapes dans l'ordre.");
     if (p !== null && nbRepondues(a) > 0) parts.push("## Mes réponses (questionnaire ElecMoinsChere)\n\n" + blocReponses(a, p));
     parts.push(etape1(a, p));
     if (p === null) {
       parts.push(parcoursEnedis(a, true));
-      parts.push(parcoursFichier(a, true));
+      parts.push(parcoursFichier({ reseau: 'eld' }, true));
       parts.push(parcoursFactures(a, true));
       parts.push("## Suite commune aux trois parcours");
     } else if (p === 'enedis') {
       parts.push(parcoursEnedis(a, false));
-      parts.push("## Étape 2 bis — Si le navigateur intégré n'est pas disponible\n\n" + parcoursFichier(a, false).replace("## Étape 2 — Récupérer ma consommation dans les fichiers joints\n\n", ''));
+      parts.push("## Étape 2 bis — Sans accès à l'espace Enedis (navigateur indisponible, pas d'identifiants, ou je préfère ne pas l'utiliser)\n\nPasse directement à l'étape 5 ensuite, sans les étapes 3 et 4. Pose aussi, si tu ne le sais pas : " + Q_CHAUFFAGE + "\n\n" + parcoursFactures(a, false).replace("## Étape 2 — Construire un profil estimé à partir de ma consommation annuelle\n\n", ''));
     } else if (p === 'fichier') {
       parts.push(parcoursFichier(a, false));
     } else if (p === 'factures') {
@@ -918,6 +923,8 @@ if (typeof module !== 'undefined') module.exports = EMC;
     if (a.loc === 'corse' || a.loc === 'dom') return { loc: a.loc };
     if (a.reseau !== 'eld') delete a.eld_export;
     if (a.reseau === 'eld' || a.linky === 'non') { delete a.compte; delete a.horaire; delete a.appareil; delete a.activation; }
+    if (a.compte === 'annuel') { delete a.horaire; delete a.appareil; delete a.activation; }
+    if (pc === 'factures' && a.reseau !== 'eld' && a.linky !== 'non') delete a.horaire;
     if (a.horaire !== 'moins12') delete a.activation;
     if (pc === 'factures') { delete a.debut; delete a.fin; } else { delete a.kwh_total; delete a.kwh_hc; }
     if (!(pc === 'factures' || a.horaire === 'non')) delete a.chauffage;
@@ -950,6 +957,8 @@ if (typeof module !== 'undefined') module.exports = EMC;
     $('b2').hidden = hors || r.reseau === 'eld' || r.linky === 'non';
     $('b3').hidden = hors;
     $('q-periode').hidden = (pc === 'factures');
+    $('q-horaire').hidden = (r.compte === 'annuel');
+    $('q-appareil').hidden = (r.compte === 'annuel');
     $('b3n').textContent = $('b2').hidden ? '2 / 2' : '3 / 3';
     if (!$('b2').hidden) $('b1').querySelector('.n').textContent = '1 / 3'; else $('b1').querySelector('.n').textContent = '1 / 2';
 
@@ -963,9 +972,9 @@ if (typeof module !== 'undefined') module.exports = EMC;
       pill = 'Prompt complet'; titre = 'Répondez au questionnaire, ou copiez le prompt complet';
       desc = "Sans réponse, le prompt pose lui-même toutes les questions au début de la conversation, avec les tutoriels, et choisit le bon parcours.";
     } else if (pc === 'factures') {
-      pill = 'Analyse estimée'; cls = 'est'; titre = 'Estimation à partir de vos factures';
-      desc = "Votre consommation totale est réelle, sa répartition dans l'année et dans la journée est estimée. Les offres Base et heures creuses sont assez fiables, Tempo et les offres à saisons beaucoup moins.";
-      prep = ['Votre dernière facture de régularisation annuelle (vous pouvez la joindre à la conversation).'];
+      pill = 'Classement approximatif'; cls = 'est'; titre = 'À partir de votre consommation annuelle';
+      desc = "Pas besoin de l'espace Enedis : vous donnez votre consommation de l'année en kWh. Fiable pour Base et heures creuses, approximatif pour Tempo et les offres à saisons.";
+      prep = ['Votre consommation annuelle en kWh (facture de régularisation ou espace client de votre fournisseur). Vous pouvez aussi joindre la facture.'];
     } else if (pc === 'fichier') {
       pill = a.horaire === 'non' ? 'Analyse estimée' : 'Analyse sur fichiers'; cls = a.horaire === 'non' ? 'est' : '';
       titre = a.reseau === 'eld' ? 'Analyse à partir de l\'export de votre gestionnaire' : 'Analyse à partir des fichiers téléchargés sur Enedis';
