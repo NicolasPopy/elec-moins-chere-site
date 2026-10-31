@@ -236,6 +236,18 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 .tile .tl { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .tile strong { font-family: var(--font-display); font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tile .ts { font-size: 13.5px; color: var(--muted); }
+.tile { position: relative; }
+.tile .info { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--muted); background: var(--surface); color: var(--ink); font: italic 600 13px/1 Georgia, serif; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.tile .info:hover, .tile .info[aria-expanded="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.tile .tl { padding-right: 26px; }
+.pop { position: absolute; z-index: 20; top: 38px; right: 8px; width: min(360px, calc(100vw - 40px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 32px -12px rgba(0,0,0,.45); padding: 12px 14px; display: grid; gap: 8px; font-size: 13.5px; }
+.pop-t { font-weight: 600; font-size: 14px; }
+.pop table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.pop td { padding: 3px 0; vertical-align: top; }
+.pop td:nth-child(2) { color: var(--muted); padding-inline: 8px; font-size: 12.5px; }
+.pop td.n { text-align: right; white-space: nowrap; }
+.pop tr.tot td { border-top: 1px solid var(--line); font-weight: 600; padding-top: 5px; }
+.pop-n { color: var(--muted); font-size: 12px; }
 .tile.past { background: var(--warn-soft); border-color: var(--warn); }
 .tile.next { background: var(--accent-soft); border-color: var(--accent-ink); }
 .tile.best { border-color: var(--ok); }
@@ -1345,28 +1357,36 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var p = g.prix_kwh || {}, energie = null, approx = false;
     var M = ch === 'oui' ? MOIS.oui : ch === 'non' ? MOIS.non : MOIS.oui.map(function (v, i) { return (v + MOIS.non[i]) / 2; });
     var hiver = [10, 11, 0, 1, 2].reduce(function (s, i) { return s + M[i]; }, 0) / 100;
-    if (o.option === 'base' && p.base != null) energie = E * p.base;
-    else if (o.option === 'hphc' && p.hp != null) energie = E * (1 - h) * p.hp + E * h * p.hc;
+    var det = [];
+    var kwhF = function (v) { return Math.round(v).toLocaleString('fr-FR') + ' kWh'; };
+    var pxF = function (v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + ' €'; };
+    var poste = function (lab, k, prix) { det.push([lab, kwhF(k) + ' × ' + pxF(prix), k * prix]); return k * prix; };
+    if (o.option === 'base' && p.base != null) energie = poste('Électricité', E, p.base);
+    else if (o.option === 'hphc' && p.hp != null) energie = poste('Heures pleines', E * (1 - h), p.hp) + poste('Heures creuses', E * h, p.hc);
     else if (o.option === 'week_end' && p.semaine != null) {
       var we = /plus/i.test(o.id) ? 0.47 : 0.34; approx = true;
-      energie = E * (1 - we) * p.semaine + E * we * p.week_end;
+      energie = poste('Semaine', E * (1 - we), p.semaine) + poste('Week-end' + (/plus/i.test(o.id) ? ' et jour choisi' : '') + ' (~' + Math.round(we * 100) + ' %)', E * we, p.week_end);
     } else if (o.option === 'tempo' && p.bleu_hp != null) {
       var f = ch === 'oui' ? 1.3 : ch === 'non' ? 1.1 : 1.2;
       var jour = function (i) { return E * M[i] / 100 / JOURS[i]; };
       var rouge = 22 * (jour(11) + jour(0) + jour(1)) / 3 * f;
       var blanc = 43 * ([10, 11, 0, 1, 2].reduce(function (s, i) { return s + jour(i); }, 0) / 5) * f;
       var bleu = E - rouge - blanc; approx = true;
-      energie = bleu * ((1 - h) * p.bleu_hp + h * p.bleu_hc) + blanc * ((1 - h) * p.blanc_hp + h * p.blanc_hc) + rouge * ((1 - h) * p.rouge_hp + h * p.rouge_hc);
+      energie = poste('Bleu HP', bleu * (1 - h), p.bleu_hp) + poste('Bleu HC', bleu * h, p.bleu_hc)
+        + poste('Blanc HP', blanc * (1 - h), p.blanc_hp) + poste('Blanc HC', blanc * h, p.blanc_hc)
+        + poste('Rouge HP', rouge * (1 - h), p.rouge_hp) + poste('Rouge HC', rouge * h, p.rouge_hc);
     } else if (o.option === 'saisons' && p.hiver != null && p.ete != null && p.hiver_hp == null) {
-      energie = E * hiver * p.hiver + E * (1 - hiver) * p.ete; approx = true;
+      approx = true; energie = poste('Hiver (nov.-mars)', E * hiver, p.hiver) + poste('Été (avr.-oct.)', E * (1 - hiver), p.ete);
     } else if (o.option === 'saisons' && p.hiver_hp != null && p.ete_hsc == null && p.hiver_hsc == null) {
-      energie = E * hiver * ((1 - h) * p.hiver_hp + h * p.hiver_hc) + E * (1 - hiver) * ((1 - h) * p.ete_hp + h * p.ete_hc); approx = true;
+      approx = true;
+      energie = poste('Hiver HP', E * hiver * (1 - h), p.hiver_hp) + poste('Hiver HC', E * hiver * h, p.hiver_hc) + poste('Été HP', E * (1 - hiver) * (1 - h), p.ete_hp) + poste('Été HC', E * (1 - hiver) * h, p.ete_hc);
     }
     if (energie == null) return null;
     var total = g.abonnement_mois * 12 + energie;
     var promo = (o.promotions || []).filter(function (x) { return !x.date_fin || x.date_fin >= new Date().toISOString().slice(0, 10); })
       .reduce(function (s, x) { return s + (x.valeur_an1_eur || 0) + (x.mois_abonnement_offerts ? x.mois_abonnement_offerts * g.abonnement_mois : 0); }, 0);
-    return { total: total, avecPromo: total - promo, promo: promo, promoTxt: (o.promotions || []).map(function (x) { return x.description; }).join(' ; '), approx: approx, ferme: g.ouvert_nouveaux_clients === false || o.ouvert_nouveaux_clients === false };
+    det.unshift(['Abonnement', g.abonnement_mois.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' € × 12 mois', g.abonnement_mois * 12]);
+    return { det: det, total: total, avecPromo: total - promo, promo: promo, promoTxt: (o.promotions || []).map(function (x) { return x.description; }).join(' ; '), approx: approx, ferme: g.ouvert_nouveaux_clients === false || o.ouvert_nouveaux_clients === false };
   }
   function classement(r, pc) {
     var sec = $('classement');
@@ -1375,6 +1395,9 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var actuelId = idOffreActuelle(), actuel = PRIX.offres.filter(function (o) { return o.id === actuelId; })[0];
     var hcDonne = parseFloat(r.kwh_hc) > 0 && parseFloat(r.kwh_hc) < E;
     var h = hcDonne ? parseFloat(r.kwh_hc) / E : ((actuel && /hphc|tempo/.test(actuel.option)) ? 0.30 : 0.25);
+    var sig = JSON.stringify([E, kva, h, r.chauffage, actuelId, r.montant, !!classement.tout, PRIX.meta.mis_a_jour_le]);
+    if (sig === classement.sig && !sec.hidden) return true;
+    classement.sig = sig;
     var FN = {}; PRIX.fournisseurs.forEach(function (f) { FN[f.id] = f; });
     var lignes = {}, nonCalc = [];
     PRIX.offres.forEach(function (o) {
@@ -1398,8 +1421,30 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var refL = lignes['__ref'];
     // Synthèse : année passée (payé) / année à venir (contrat) / meilleure offre
     var sum = $('cl-sum'); sum.innerHTML = '';
-    function tuile(cls, lab, val, sub) {
+    function detailBox(x, titre) {
+      var box = document.createElement('div'); box.className = 'pop'; box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Détail du calcul');
+      var h4 = document.createElement('p'); h4.className = 'pop-t'; h4.textContent = titre; box.appendChild(h4);
+      var tbl = document.createElement('table');
+      var ligne = function (a, b, c, cls) { var tr = document.createElement('tr'); if (cls) tr.className = cls; [a, b, c].forEach(function (t, k) { var td = document.createElement('td'); td.textContent = t; if (k === 2) td.className = 'n'; tr.appendChild(td); }); tbl.appendChild(tr); };
+      x.c.det.forEach(function (d) { ligne(d[0], d[1], eur0(d[2])); });
+      ligne('Total', '', eur0(x.c.total), 'tot');
+      if (x.ref) ligne('Promotion', 'non appliquée (déjà client)', '–');
+      else if (x.c.promo > 0) { ligne('Promotion 1re année', x.c.promoTxt, '−' + eur0(x.c.promo)); ligne('À payer la 1re année', '', eur0(x.c.avecPromo), 'tot'); }
+      box.appendChild(tbl);
+      var note = document.createElement('p'); note.className = 'pop-n';
+      note.textContent = 'Prix TTC du ' + (PRIX.meta.mis_a_jour_le || '').split('-').reverse().join('/') + ', ' + kva + ' kVA, ' + E.toLocaleString('fr-FR') + ' kWh/an, heures creuses ' + Math.round(h * 100) + ' %' + (x.c.approx ? '. Répartition estimée (profil moyen' + (r.chauffage === 'oui' ? ' avec chauffage électrique' : r.chauffage === 'non' ? ' sans chauffage électrique' : '') + (x.o.option === 'tempo' ? ' ; 22 jours rouges et 43 blancs l\'hiver, consommation ×' + (r.chauffage === 'oui' ? '1,3' : r.chauffage === 'non' ? '1,1' : '1,2') + ' ces jours-là' : '') + ').' : '.');
+      box.appendChild(note);
+      return box;
+    }
+    function tuile(cls, lab, val, sub, x, titre) {
       var d = document.createElement('div'); d.className = 'tile ' + cls;
+      if (x && x.c && x.c.det) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'info'; b.textContent = 'i'; b.setAttribute('aria-label', 'Voir le détail du calcul'); b.setAttribute('aria-expanded', 'false');
+        var box = detailBox(x, titre);
+        if (classement.ouvert === cls) { box.hidden = false; b.setAttribute('aria-expanded', 'true'); }
+        b.addEventListener('click', function (e) { e.stopPropagation(); var open = box.hidden; document.querySelectorAll('.tile .pop').forEach(function (p) { p.hidden = true; }); document.querySelectorAll('.tile .info').forEach(function (q) { q.setAttribute('aria-expanded', 'false'); }); box.hidden = !open; b.setAttribute('aria-expanded', open ? 'true' : 'false'); classement.ouvert = open ? cls : null; });
+        d.appendChild(b); d.appendChild(box);
+      }
       var l = document.createElement('span'); l.className = 'tl'; l.textContent = lab; d.appendChild(l);
       var v = document.createElement('strong'); v.textContent = val; d.appendChild(v);
       if (sub) { var sb = document.createElement('span'); sb.className = 'ts'; if (typeof sub === 'string') sb.textContent = sub; else sb.appendChild(sub); d.appendChild(sb); }
@@ -1410,13 +1455,13 @@ if (typeof module !== 'undefined') module.exports = EMC;
       var sub1 = document.createElement('span');
       sub1.textContent = refL.o.offre + (paye ? ' · ' : '');
       if (paye) { sub1.appendChild(ecart(ref, paye)); sub1.appendChild(document.createTextNode(' vs l\'an passé')); }
-      tuile('next', 'Année à venir · votre contrat', (refL.c.approx ? '~' : '') + eur0(ref), sub1);
+      tuile('next', 'Année à venir · votre contrat', (refL.c.approx ? '~' : '') + eur0(ref), sub1, refL, 'Votre contrat : ' + (FN[refL.o.fournisseur] || {}).nom + ' – ' + refL.o.offre);
     } else tuile('next', 'Année à venir · votre contrat', '–', 'choisissez votre offre actuelle');
     if (meilleure) {
       var sub2 = document.createElement('span');
       sub2.textContent = (FN[meilleure.o.fournisseur] || {}).nom + ' – ' + meilleure.o.offre + (ref != null ? ' · ' : '');
       if (ref != null) sub2.appendChild(ecart(meilleure.c.avecPromo, ref));
-      tuile('best', 'Année à venir · meilleure offre', (meilleure.c.approx ? '~' : '') + eur0(meilleure.c.avecPromo), sub2);
+      tuile('best', 'Année à venir · meilleure offre', (meilleure.c.approx ? '~' : '') + eur0(meilleure.c.avecPromo), sub2, meilleure, 'Meilleure offre : ' + (FN[meilleure.o.fournisseur] || {}).nom + ' – ' + meilleure.o.offre);
     }
     // Tableau compact : 8 premières offres + votre contrat, le reste repliable
     var MAX = 8, tout = !!classement.tout, rang = 0;
@@ -1447,6 +1492,9 @@ if (typeof module !== 'undefined') module.exports = EMC;
     return true;
   }
 
+  function fermerPops() { classement.ouvert = null; document.querySelectorAll('.tile .pop').forEach(function (p) { p.hidden = true; }); document.querySelectorAll('.tile .info').forEach(function (q) { q.setAttribute('aria-expanded', 'false'); }); }
+  document.addEventListener('click', function (e) { if (!e.target.closest('.pop') && !e.target.closest('.info')) fermerPops(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerPops(); });
   $('cl-more').addEventListener('click', function () { classement.tout = !classement.tout; rendre(); });
   rendre();
   chargerPrix();
