@@ -169,23 +169,48 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
   .meter .bar { transform-origin: bottom; animation: rise .7s ease-out both; }
   @keyframes rise { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
 }
+/* Allègement : flux en 3 étapes, aides repliables, Tempo */
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toplink { color: var(--hero-fg); font-size: 15px; font-weight: 500; text-decoration: none; border-bottom: 1px solid var(--accent); }
+.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 15.5px; color: var(--hero-muted); }
+.flow li { display: inline-flex; align-items: center; gap: 8px; }
+.flow b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 14px var(--font-display); border: 1.5px solid var(--hero-muted); color: var(--hero-muted); }
+.flow li.now { color: var(--hero-fg); font-weight: 600; }
+.flow li.now b { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.big { font-size: 18px; padding: 17px 26px; }
+.cta { align-items: center; }
+.cta-note { font-family: var(--font-mono); font-size: 13px; color: var(--hero-muted); }
+details.tip { font-size: 14.5px; color: var(--muted); }
+details.tip summary { cursor: pointer; color: var(--accent-ink); font-weight: 500; width: max-content; max-width: 100%; }
+details.tip p { margin-top: 6px; max-width: 65ch; }
+.timeline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.timeline > div { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.timeline .when { font-family: var(--font-mono); font-size: 13px; color: var(--accent-ink); }
+.timeline ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15.5px; }
+.src { font-size: 14px; color: var(--muted); }
+details.tuto-d { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 16px; }
+details.tuto-d summary { cursor: pointer; font-weight: 600; }
+details.tuto-d ol { margin: 10px 0 6px; padding-left: 22px; display: grid; gap: 5px; font-size: 15.5px; }
+details.tuto-d p { font-size: 14.5px; color: var(--muted); }
+ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template-columns: none; }
+@media (max-width: 600px) { .timeline { grid-template-columns: 1fr; } .btn.big { width: 100%; justify-content: center; } }
 </style>
 
 </head>
 <body>
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">ElecMoinsChere · prompt Claude</span>
+    <div class="topbar"><span class="eyebrow">ElecMoinsChere</span><a class="toplink" href="prix.html">Voir les prix relevés →</a></div>
     <h1>Quelle offre d'électricité est la moins chère <em>pour votre consommation réelle</em>&nbsp;?</h1>
-    <p class="lead">Répondez à quelques questions sur votre logement, votre compteur et votre contrat. La page fabrique un prompt adapté à votre situation. Collez-le dans Claude : il récupère votre consommation, la recalcule aux prix actuels de chaque fournisseur et vous dit lequel est le moins cher.</p>
+    <p class="lead">Claude recalcule votre année de consommation, heure par heure, aux prix actuels de chaque fournisseur.</p>
+    <ol class="flow" aria-label="Comment ça marche">
+      <li class="now"><b>1</b>Répondez au questionnaire</li>
+      <li><b>2</b>Copiez le prompt généré</li>
+      <li><b>3</b>Collez-le dans Claude</li>
+    </ol>
     <div class="cta">
-      <a class="btn primary" href="#questionnaire">Commencer le questionnaire</a>
-      <a class="btn ghost" href="#tutoriels">Tutoriels Enedis</a>
-      <a class="btn ghost" href="prix.html">Tous les prix relevés</a>
-    </div>
-    <div class="meter" aria-label="Exemple de profil de consommation sur une journée, heure par heure">
-      <div class="meter-head"><span>EXEMPLE · UNE JOURNÉE · kWh PAR HEURE</span><span>HC 22h–6h · <b>26 % en heures creuses</b></span></div>
-      <svg id="curve" viewBox="0 0 480 120" role="img" aria-label="24 barres, plus hautes le soir et la nuit"></svg>
+      <a class="btn primary big" href="#questionnaire">Commencer le questionnaire&nbsp;→</a>
+      <span class="cta-note">2 minutes · gratuit · sans inscription</span>
     </div>
   </div>
 </header>
@@ -194,26 +219,24 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
   <div class="wrap">
 
     <section id="pourquoi">
-      <span class="kicker">Pourquoi</span>
-      <h2>Les comparateurs classiques devinent votre profil</h2>
+      <span class="kicker">Pourquoi c'est plus juste</span>
       <div class="compare">
         <div>
           <span class="tag">Comparateur habituel</span>
-          <h3>Un total annuel et une hypothèse</h3>
-          <p>Vous indiquez vos kWh de l'année. Le site suppose une part d'heures creuses standard et ignore à quels jours vous consommez.</p>
+          <h3>Un total annuel</h3>
+          <p>Et une part d'heures creuses supposée.</p>
         </div>
         <div class="ours">
           <span class="tag">ElecMoinsChere</span>
-          <h3>8 760 heures réelles</h3>
-          <p>Votre vrai créneau d'heures creuses, vos jours bleus, blancs et rouges, vos saisons. Tempo peut être très rentable ou très coûteux selon ces détails.</p>
+          <h3>Vos 8 760 heures réelles</h3>
+          <p>Votre créneau d'heures creuses, vos jours Tempo, vos saisons.</p>
         </div>
       </div>
-      <p class="note">Pas de compteur Linky, ou consommation horaire pas encore activée&nbsp;? Le questionnaire vous propose quand même une analyse estimée, et vous explique comment obtenir la version complète.</p>
     </section>
 
     <section id="questionnaire">
-      <span class="kicker">Questionnaire</span>
-      <h2>Votre situation, en trois blocs</h2>
+      <span class="kicker">Étape 1 · Questionnaire</span>
+      <h2>Votre situation</h2>
       <p class="progress" id="progress"></p>
 
       <div class="block" id="b1">
@@ -236,7 +259,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="reseau" id="reseau-eld" value="eld"><span>Une entreprise locale</span></label>
             <label class="chip"><input type="radio" name="reseau" id="reseau-nsp" value="nsp"><span>Je ne sais pas</span></label>
           </div>
-          <p class="hint" id="tuto-reseau"></p>
+          <details class="tip"><summary>Comment savoir&nbsp;?</summary><p id="tuto-reseau"></p></details>
         </fieldset>
 
         <fieldset id="q-eld" data-show="reseau=eld">
@@ -246,7 +269,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="eld_export" id="eld-non" value="non"><span>Non</span></label>
             <label class="chip"><input type="radio" name="eld_export" id="eld-nsp" value="nsp"><span>Je ne sais pas</span></label>
           </div>
-          <p class="hint">Cherchez une rubrique « consommation », « mesures » ou « courbe de charge » dans l'espace client de votre gestionnaire (pas celui de votre fournisseur). Sans export horaire, l'analyse sera estimée à partir de vos factures.</p>
+          <p class="hint">Rubrique « consommation » ou « courbe de charge » de son espace client. Sinon, l'analyse sera estimée sur vos factures.</p>
         </fieldset>
 
         <fieldset id="q-linky">
@@ -256,8 +279,8 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="linky" id="linky-non" value="non"><span>Non</span></label>
             <label class="chip"><input type="radio" name="linky" id="linky-nsp" value="nsp"><span>Je ne sais pas</span></label>
           </div>
-          <p class="hint" id="tuto-linky"></p>
-          <div class="callout info" data-show="linky=non"><p>Sans Linky, il n'y a pas de consommation heure par heure. L'analyse sera <strong>estimée à partir de vos factures</strong> : fiable pour les offres Base et heures creuses, beaucoup moins pour Tempo. Le Linky se demande gratuitement à Enedis.</p></div>
+          <details class="tip"><summary>Reconnaître un Linky</summary><p id="tuto-linky"></p></details>
+          <div class="callout info" data-show="linky=non"><p>Sans Linky, l'analyse sera <strong>estimée à partir de vos factures</strong> : fiable pour Base et heures creuses, moins pour Tempo.</p></div>
         </fieldset>
       </div>
 
@@ -270,7 +293,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="compte" id="compte-oui" value="oui"><span>Oui</span></label>
             <label class="chip"><input type="radio" name="compte" id="compte-non" value="non"><span>Non</span></label>
           </div>
-          <p class="hint">C'est mon-compte-particulier.enedis.fr, différent de l'espace client de votre fournisseur. Gratuit, il ne change rien à votre contrat.</p>
+          <p class="hint">mon-compte-particulier.enedis.fr, gratuit, différent de l'espace de votre fournisseur.</p>
           <div class="callout info" data-show="compte=non">
             <p><strong>Créez votre compte (5 minutes)</strong></p>
             <ol class="tuto-inscription"></ol>
@@ -286,7 +309,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="horaire" id="horaire-non" value="non"><span>Non</span></label>
             <label class="chip"><input type="radio" name="horaire" id="horaire-nsp" value="nsp"><span>Je ne sais pas</span></label>
           </div>
-          <p class="hint" id="tuto-verif"></p>
+          <details class="tip"><summary>Comment vérifier&nbsp;?</summary><p id="tuto-verif"></p></details>
           <div class="field" data-show="horaire=moins12">
             <label for="activation">Activée depuis (environ)</label>
             <input type="month" id="activation" name="activation">
@@ -295,7 +318,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <p><strong>Activez-la aujourd'hui pour la prochaine fois</strong></p>
             <ol class="tuto-activation"></ol>
           </div>
-          <div class="callout info" data-show="horaire=nsp"><p>Pas de souci : Claude testera vos données et choisira tout seul entre l'analyse complète, partielle ou estimée.</p></div>
+          <div class="callout info" data-show="horaire=nsp"><p>Pas de souci : Claude testera vos données.</p></div>
         </fieldset>
 
         <fieldset id="q-appareil">
@@ -304,7 +327,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="appareil" id="appareil-desktop" value="desktop"><span>Application Claude sur ordinateur</span></label>
             <label class="chip"><input type="radio" name="appareil" id="appareil-web" value="web"><span>Claude sur le web ou sur mobile</span></label>
           </div>
-          <p class="hint">Sur ordinateur, Claude ouvre votre espace Enedis dans le navigateur intégré de l'application et récupère tout seul vos mesures. Ailleurs, vous téléchargez vos données sur le site Enedis et vous joignez les fichiers à la conversation.</p>
+          <p class="hint">Sur ordinateur, Claude récupère vos mesures tout seul. Ailleurs, vous joignez vos fichiers Enedis.</p>
         </fieldset>
       </div>
 
@@ -342,7 +365,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <div class="field"><label for="debut">Début</label><input type="date" id="debut" name="debut"></div>
             <div class="field"><label for="fin">Fin</label><input type="date" id="fin" name="fin"></div>
           </div>
-          <p class="hint" id="periode-hint">Enedis conserve la consommation horaire environ 2 ans. 12 mois couvrent l'hiver et l'été.</p>
+          <p class="hint" id="periode-hint">12 mois pour couvrir l'hiver et l'été.</p>
         </fieldset>
 
         <fieldset id="q-chauffage" data-show="estime=1">
@@ -352,7 +375,7 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
             <label class="chip"><input type="radio" name="chauffage" id="ch-non" value="non"><span>Non</span></label>
             <label class="chip"><input type="radio" name="chauffage" id="ch-nsp" value="nsp"><span>Je ne sais pas</span></label>
           </div>
-          <p class="hint">Radiateurs, pompe à chaleur ou chaudière électrique. Sert à estimer comment votre consommation se répartit sur l'année et les jours rouges.</p>
+          <p class="hint">Radiateurs, pompe à chaleur ou chaudière électrique.</p>
         </fieldset>
 
         <div class="row" data-show="parcours=factures">
@@ -371,15 +394,15 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
           <label for="montant">Montant payé sur la période (€, facultatif)</label>
           <input type="number" id="montant" name="montant" min="0" step="1" inputmode="numeric" placeholder="Pour contrôle seulement">
         </div>
-        <p class="hint">Ce que vous ne remplissez pas, Claude vous le demandera au début de la conversation.</p>
+        <p class="hint">Ce que vous laissez vide, Claude vous le demandera.</p>
       </div>
 
       <button class="reset" id="reset" type="button">Effacer mes réponses</button>
     </section>
 
     <section id="prompt">
-      <span class="kicker">Votre prompt</span>
-      <h2>Généré selon vos réponses</h2>
+      <span class="kicker">Étapes 2 et 3 · Votre prompt</span>
+      <h2>Copiez-le, collez-le dans Claude</h2>
       <div class="verdict" id="verdict" aria-live="polite"></div>
       <div class="prompt-box" id="prompt-box">
         <div class="prompt-bar">
@@ -392,34 +415,53 @@ footer .wrap { padding-block: 24px 40px; font-size: 14px; color: var(--muted); d
       <ol class="steps" id="launch"></ol>
     </section>
 
-    <section id="tutoriels">
-      <span class="kicker">Tutoriels</span>
-      <h2>Préparer votre espace Enedis</h2>
-      <div class="tutos">
-        <div class="tuto" id="tuto-inscription">
-          <h3>Créer son compte Enedis</h3>
-          <ol class="tuto-inscription"></ol>
-          <p class="tuto-prm"></p>
+    <section id="tempo">
+      <span class="kicker">Bon à savoir · Tempo</span>
+      <h2>Tempo : les jours rouges changent, pas les horaires</h2>
+      <p class="hint">Heures creuses toujours de 22 h à 6 h, journée Tempo de 6 h à 6 h. La CRE a modifié le choix et l'annonce des jours rouges (délibération n° 2026-189 du 21 octobre 2026).</p>
+      <div class="timeline">
+        <div>
+          <span class="when">Dès le 1<sup>er</sup> novembre 2026</span>
+          <ul>
+            <li>Plus de jour rouge les 24 et 31 décembre.</li>
+            <li>Un quota de jours rouges par mois, pour éviter qu'ils s'entassent en fin d'hiver.</li>
+            <li>Toujours 22 jours rouges, 43 blancs et 300 bleus, annoncés la veille vers 10 h 30.</li>
+          </ul>
         </div>
-        <div class="tuto" id="tuto-activation">
-          <h3>Activer la consommation heure par heure</h3>
-          <ol class="tuto-activation"></ol>
-          <p id="tuto-verif-2"></p>
+        <div>
+          <span class="when">Dès le 1<sup>er</sup> novembre 2027</span>
+          <ul>
+            <li>Un jour rouge pourra être annoncé jusqu'à 2 jours à l'avance.</li>
+            <li>La page de RTE devient la référence, avec des notifications sur demande.</li>
+          </ul>
         </div>
       </div>
-      <p class="note">Les noms des menus Enedis changent de temps en temps : si un libellé diffère, cherchez la rubrique la plus proche.</p>
+      <p class="src">Le comparatif utilise le vrai calendrier de la période analysée. Sources : <a href="https://www.jechange.fr/energie/electricite/news/jours-rouges-tempo-connus-2-jours-avance-rte-novembre-2027" target="_blank" rel="noopener">JeChange</a>, <a href="https://www.hellowatt.fr/blog/cre-reforme-tempo-novembre-2026/" target="_blank" rel="noopener">Hello Watt</a>.</p>
+    </section>
+
+    <section id="tutoriels">
+      <span class="kicker">Tutoriels Enedis</span>
+      <details class="tuto-d">
+        <summary>Créer son compte Enedis</summary>
+        <ol class="tuto-inscription"></ol>
+        <p class="tuto-prm"></p>
+      </details>
+      <details class="tuto-d">
+        <summary>Activer la consommation heure par heure</summary>
+        <ol class="tuto-activation"></ol>
+        <p id="tuto-verif-2"></p>
+      </details>
     </section>
 
     <section id="securite">
-      <span class="kicker">Ce que Claude fait et ne fait pas</span>
-      <h2>Vos accès restent entre vos mains</h2>
-      <div class="guard">
-        <p><b>Ne saisit jamais</b> votre identifiant, votre mot de passe ni un code de vérification.</p>
-        <p><b>Ne modifie rien</b> dans votre espace Enedis, pas même l'activation de la consommation horaire.</p>
-        <p><b>Ne télécharge aucun fichier</b> sur votre ordinateur : les mesures sont lues et calculées dans la page.</p>
-        <p><b>Ne rapporte que des totaux</b> dans la conversation, jamais vos valeurs heure par heure.</p>
-      </div>
-      <p class="note">Vos réponses restent dans votre navigateur ; cette page n'envoie rien. Le résultat est une estimation aux prix du jour de l'analyse : vérifiez les tarifs sur le site du fournisseur avant de souscrire. Ce n'est pas un conseil financier.</p>
+      <span class="kicker">Vos accès restent entre vos mains</span>
+      <ul class="guard">
+        <li>Vous vous connectez vous-même : Claude ne saisit jamais vos identifiants.</li>
+        <li>Rien n'est modifié dans votre espace Enedis.</li>
+        <li>Aucun fichier n'est téléchargé sur votre ordinateur.</li>
+        <li>Seuls des totaux remontent dans la conversation.</li>
+      </ul>
+      <p class="hint">Vos réponses restent dans votre navigateur. Vérifiez les prix chez le fournisseur avant de souscrire ; ce n'est pas un conseil financier.</p>
     </section>
 
   </div>
@@ -963,7 +1005,7 @@ if (typeof module !== 'undefined') module.exports = EMC;
       ['Répondez aux questions qui manquent', 'Claude ne vous repose pas celles du questionnaire.']
     ];
     if (desktop) steps.push(['Connectez-vous à Enedis dans le panneau navigateur', 'Vous saisissez vous-même identifiant, mot de passe et code, puis vous dites à Claude que c\'est fait.']);
-    steps.push(['Lisez le résultat', 'Offres classées du moins cher au plus cher, écart avec votre contrat (🟢 moins cher, 🔴 plus cher), détail Tempo et OctoSaisons, points à retenir et sources.']);
+    steps.push(['Lisez le résultat', 'Les offres classées de la moins chère à la plus chère, et l\'écart avec votre contrat.']);
     launch.innerHTML = '';
     launch.hidden = (pc === 'horszone');
     steps.forEach(function (s) { var li = document.createElement('li'); var d = document.createElement('div'); var st = document.createElement('strong'); st.textContent = s[0]; var p = document.createElement('p'); p.textContent = s[1]; d.appendChild(st); d.appendChild(p); li.appendChild(d); launch.appendChild(li); });
@@ -1019,18 +1061,6 @@ if (typeof module !== 'undefined') module.exports = EMC;
 
   rendre();
 
-  // Courbe d'exemple : 24 heures, HC 22h-6h
-  var kwh = [0.55,0.48,0.42,0.40,0.38,0.45,0.70,0.95,0.80,0.55,0.50,0.62,0.85,0.60,0.48,0.46,0.58,0.90,1.35,1.55,1.30,1.05,1.20,0.75];
-  var svg = $('curve'), W = 480, top = 6, base = 100, max = 1.6, bw = W / 24, html = '';
-  var cs = getComputedStyle(document.documentElement);
-  var cHc = cs.getPropertyValue('--hc').trim() || '#2F6F8F', cHp = cs.getPropertyValue('--accent').trim() || '#B8CC1F', cTx = cs.getPropertyValue('--meter-text').trim() || '#9DB0AA', cLn = cs.getPropertyValue('--meter-line').trim() || '#2C4048';
-  for (var h = 0; h < 24; h++) {
-    var hc = (h >= 22 || h < 6), bh = (kwh[h] / max) * (base - top);
-    html += '<rect class="bar" x="' + (h * bw + 2).toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + (bw - 4).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="2" fill="' + (hc ? cHc : cHp) + '" style="animation-delay:' + (h * 25) + 'ms"></rect>';
-  }
-  html += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="' + cLn + '" stroke-width="1"></line>';
-  [0, 6, 12, 18, 23].forEach(function (h) { html += '<text x="' + (h * bw + bw / 2).toFixed(1) + '" y="116" text-anchor="middle" fill="' + cTx + '" font-family="IBM Plex Mono, monospace" font-size="11">' + h + 'h</text>'; });
-  svg.innerHTML = html;
 })();
 </script>
 
