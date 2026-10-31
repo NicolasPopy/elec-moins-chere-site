@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mentions légales ElecMoinsChere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout : page de texte sobre, une colonne, bandeau sombre identique au site */
+:root {
+  --bg: #F3F6F2; --surface: #FFFFFF; --ink: #15242B; --muted: #55666B; --line: #D5DDD7;
+  --accent: #B8CC1F; --accent-ink: #4E5A00; --hero-bg: #15242B; --hero-fg: #EEF3EF; --on-accent: #15242B;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light; box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F; --accent: #C9DC3A; --accent-ink: #D6E65A; --hero-bg: #0A1316; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0E181C; --surface: #15232A; --ink: #E4ECE8; --muted: #9AACAF; --line: #27383F; --accent: #C9DC3A; --accent-ink: #D6E65A; --hero-bg: #0A1316; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16.5px; line-height: 1.6; }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--accent-ink); text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1, h2 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+.hero { background: var(--hero-bg); color: var(--hero-fg); }
+.hero .wrap { padding-block: 26px 30px; display: grid; gap: 12px; }
+.nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+.brand { font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+.back { color: var(--hero-fg); font-size: 15px; text-decoration: none; border-bottom: 1px solid var(--accent); }
+.hero h1 { font-size: clamp(28px, 5vw, 40px); }
+main .wrap { padding-block: 12px 56px; }
+section { padding-top: 32px; display: grid; gap: 10px; }
+h2 { font-size: 22px; }
+p, ul { margin: 0; max-width: 68ch; }
+ul { padding-left: 20px; display: grid; gap: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.muted { color: var(--muted); font-size: 14.5px; }
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 20px 32px; font-size: 13.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="nav"><a class="brand" href="index.html">ElecMoinsChere</a><a class="back" href="index.html">← Retour au site</a></div>
+    <h1>Mentions légales</h1>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+
+    <section id="editeur">
+      <h2>Éditeur du site</h2>
+      <p>elecmoinschere.fr est un site personnel, édité à titre non professionnel par un particulier. Conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), l'éditeur a choisi de ne pas publier son identité ; ses coordonnées ont été communiquées à l'hébergeur.</p>
+      <div class="card">
+        <p><strong>Contact</strong> : contact@elecmoinschere.fr</p>
+        <p><strong>Directeur de la publication</strong> : l'éditeur du site, joignable à la même adresse.</p>
+      </div>
+    </section>
+
+    <section id="hebergeur">
+      <h2>Hébergeur</h2>
+      <div class="card">
+        <p><strong>GitHub, Inc.</strong> (service GitHub Pages)</p>
+        <p>88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis</p>
+        <p>Contact : <a href="https://support.github.com/contact" target="_blank" rel="noopener">support.github.com/contact</a></p>
+      </div>
+      <p class="muted">Nom de domaine enregistré auprès de Hostinger International Ltd. La base de prix est publiée dans le dépôt public github.com/NicolasPopy/elec-moins-chere-prix.</p>
+    </section>
+
+    <section id="conditions">
+      <h2>Conditions d'utilisation</h2>
+      <p>Le site est gratuit, sans inscription, et ne vend aucun produit ni service : il n'existe donc pas de conditions générales de vente.</p>
+      <ul>
+        <li>Le site génère un texte (le « prompt ») que vous copiez vous-même dans l'assistant d'intelligence artificielle de votre choix. Vous restez seul utilisateur de cet assistant et de votre espace client Enedis.</li>
+        <li>Les prix affichés sont relevés automatiquement sur les sites des fournisseurs et de comparateurs. Ils sont indicatifs et peuvent contenir des erreurs ou ne plus être à jour. Vérifiez toujours le prix sur le site du fournisseur avant de souscrire.</li>
+        <li>Les résultats obtenus avec le prompt sont des estimations. Ils ne constituent ni un conseil financier ni une recommandation de souscription. L'éditeur ne peut être tenu responsable d'une décision prise sur leur base.</li>
+        <li>ElecMoinsChere n'a aucun lien avec Enedis, EDF, RTE, les fournisseurs cités ni Anthropic, et ne perçoit aucune commission. Les marques citées appartiennent à leurs propriétaires.</li>
+        <li>Les textes du site et la base de prix peuvent être réutilisés en citant la source. Les polices de caractères sont sous licence SIL Open Font License.</li>
+      </ul>
+    </section>
+
+    <section id="donnees">
+      <h2>Données personnelles et cookies</h2>
+      <ul>
+        <li><strong>Aucune donnée personnelle n'est collectée</strong> par ce site : pas de compte, pas de formulaire envoyé, pas de cookie, pas de publicité ni d'outil de mesure d'audience.</li>
+        <li>Vos réponses au questionnaire sont enregistrées uniquement dans votre navigateur (stockage local), pour vous éviter de les retaper. Elles ne sont jamais transmises. Le bouton « Effacer mes réponses » les supprime.</li>
+        <li>Le site ne se connecte jamais à votre espace Enedis. C'est vous qui vous connectez, dans votre propre assistant d'IA, si vous choisissez ce parcours.</li>
+        <li>Comme tout hébergeur, GitHub peut enregistrer des données techniques de connexion (adresse IP, par exemple) pour la sécurité du service. La page des prix lit la base de prix sur les serveurs de GitHub.</li>
+        <li>Les polices de caractères sont hébergées sur le site lui-même : aucune requête n'est envoyée à Google Fonts.</li>
+      </ul>
+      <p class="muted">Pour toute question : contact@elecmoinschere.fr. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+    </section>
+
+  </div>
+</main>
+<footer><div class="wrap">Dernière mise à jour : 31 octobre 2026.</div></footer>
+</body>
+</html>

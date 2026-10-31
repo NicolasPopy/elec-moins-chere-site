@@ -7,8 +7,7 @@
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ElecMoinsChere</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout : une colonne de lecture ; bandeau sombre façon afficheur Linky ; questionnaire en trois blocs, puis le prompt généré */
 :root {
@@ -230,6 +229,9 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 .copy.big { font-size: 18px; padding: 16px 28px; border-radius: 10px; box-shadow: 0 2px 0 var(--accent-ink); }
 .copy.big:hover { filter: brightness(1.05); }
 .open-claude { font-weight: 600; font-size: 16px; }
+.tuto-edf summary { cursor: pointer; }
+.tuto-edf ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
+.legal-links a { color: var(--muted); }
 .pz-actions .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
 .prompt-zone .prompt-box { background: var(--surface); }
 .prompt-zone pre#prompt-view { max-height: 300px; }
@@ -479,6 +481,19 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
           <p class="hint">Radiateurs, pompe à chaleur ou chaudière électrique.</p>
         </fieldset>
 
+        <details class="callout info tuto-edf" id="tuto-edf" open hidden>
+          <summary><strong>Trouver votre consommation annuelle chez EDF</strong></summary>
+          <p><strong>Dans l'espace client EDF</strong> (compteur Linky) :</p>
+          <ol>
+            <li>Connectez-vous sur <a href="https://particulier.edf.fr" target="_blank" rel="noopener">particulier.edf.fr</a>, espace client.</li>
+            <li>Ouvrez la rubrique <strong>« Ma conso »</strong>.</li>
+            <li>Passez le graphique en <strong>vue annuelle</strong>, ou additionnez les 12 derniers mois en vue mensuelle.</li>
+            <li>Notez le total en kWh, et la part en heures creuses si elle est affichée.</li>
+          </ol>
+          <p><strong>Dans l'application EDF &amp; MOI</strong> : même suivi de consommation, rubrique consommation.</p>
+          <p><strong>Sur la facture</strong> : votre facture annuelle (facture de régularisation si vous êtes mensualisé) indique la consommation de la période en kWh, dans le détail de la consommation. Vous pouvez aussi la joindre dans la conversation : Claude la lira.</p>
+        </details>
+        <p class="hint" id="tuto-autre-fourn" hidden>Votre consommation annuelle figure sur votre facture de régularisation et dans la rubrique consommation de l'espace client de votre fournisseur.</p>
         <div class="row" data-show="parcours=factures">
           <div class="field">
             <label for="kwh_total">Consommation annuelle (kWh)</label>
@@ -507,8 +522,8 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
           <span class="pz-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg></span>
           <div>
             <span class="kicker">Étapes 2 et 3</span>
-            <h2>Votre prompt est prêt</h2>
-            <p class="pz-sub">Il se met à jour à chaque réponse. Copiez-le, puis collez-le dans une nouvelle conversation.</p>
+            <h2 id="pz-title">Votre prompt est prêt</h2>
+            <p class="pz-sub" id="pz-sub">Copiez-le, puis collez-le dans une nouvelle conversation.</p>
           </div>
         </div>
         <div class="verdict" id="verdict" aria-live="polite"></div>
@@ -603,6 +618,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
   <div class="wrap">
     <p>ElecMoinsChere est un projet personnel, sans lien avec Enedis, EDF, les fournisseurs cités ni Anthropic.</p>
     <p>Tempo est une offre d'EDF, OctoSaisons une offre d'Octopus Energy. <a href="prix.html">Voir tous les prix relevés</a>.</p>
+    <p class="legal-links"><a href="mentions-legales.html">Mentions légales</a> · <a href="mentions-legales.html#conditions">Conditions d'utilisation</a> · <a href="mentions-legales.html#donnees">Données personnelles</a> · Contact : contact@elecmoinschere.fr</p>
   </div>
 </footer>
 
@@ -610,7 +626,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 // Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
 // a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
 var EMC = (function () {
-  var VERSION = 'v8';
+  var VERSION = 'v9';
   var VERSION_DATE = '31 oct. 2026';
 
   var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
@@ -711,6 +727,9 @@ var EMC = (function () {
   var Q_CHAUFFAGE = "Chauffage électrique (radiateurs, pompe à chaleur ou chaudière électrique) — choix : Oui, Non, Je ne sais pas. Sert à estimer la répartition de ma consommation sur l'année et les jours rouges.";
   var Q_FACTURES = "Consommation annuelle en kWh — précise en description où la trouver : facture de régularisation annuelle, ou rubrique consommation de l'espace client ou de l'application de mon fournisseur. Je tape le total dans « Autre », avec la part en heures creuses si je l'ai. Choix proposés : « Je vais joindre une facture » (lis-la et prends-y le total, la part en heures creuses, la puissance et l'offre) ; « Je ne la connais pas » (propose alors des ordres de grandeur à choisir : environ 2 500 kWh pour un petit logement sans chauffage électrique, 4 500 kWh pour un logement moyen ou avec chauffe-eau électrique, 8 000 kWh ou plus avec chauffage électrique, et préviens-moi que le classement sera encore plus approximatif).";
 
+  var TUTO_EDF_CONSO = "Chez EDF : espace client sur particulier.edf.fr, rubrique « Ma conso », vue annuelle (ou somme des 12 derniers mois) ; même suivi dans l'application EDF & MOI ; ou facture annuelle de régularisation, détail de la consommation en kWh.";
+  function qFactures(a) { return Q_FACTURES + (/^EDF/i.test(a.fournisseur || '') ? " Je suis client EDF : mets aussi en description cette astuce : « " + TUTO_EDF_CONSO + " »" : ""); }
+
   function etape1(a, p) {
     var out = [];
     if (p === null) {
@@ -748,7 +767,7 @@ var EMC = (function () {
     if (!a.offre) Q.push(Q_OFFRE);
     var estime = (p === 'factures' || a.horaire === 'non');
     if (estime && (!a.chauffage || a.chauffage === 'nsp')) Q.push(Q_CHAUFFAGE);
-    if (p === 'factures' && !a.kwh_total) Q.push(Q_FACTURES);
+    if (p === 'factures' && !a.kwh_total) Q.push(qFactures(a));
     if (p === 'enedis' && a.compte === 'non') Q.unshift("Avant tout, vérifie que j'ai bien créé mon compte Enedis : demande-moi de confirmer (choix : « Compte créé et compteur ajouté », « Pas encore »). Si « Pas encore », remets-moi ce tutoriel :\n" + liste(TUTO_INSCRIPTION) + "\n   Astuce PRM : " + TUTO_PRM);
     if (Q.length === 0) out.push("Il ne manque aucune réponse : passe directement à l'étape 2.");
     else {
@@ -848,7 +867,7 @@ var EMC = (function () {
     return [
       intro ? "## Parcours C — Classement approximatif à partir de la consommation annuelle\n" : "",
       "## Étape 2 — Construire un profil estimé à partir de ma consommation annuelle\n",
-      "- Tu ne vas pas lire ma consommation sur le site Enedis. Si tu ne connais pas encore ma consommation annuelle, pose-moi cette question : " + Q_FACTURES,
+      "- Tu ne vas pas lire ma consommation sur le site Enedis. Si tu ne connais pas encore ma consommation annuelle, pose-moi cette question : " + qFactures(a) + (a.fournisseur ? "" : " Si je suis client EDF, ajoute cette astuce : « " + TUTO_EDF_CONSO + " »"),
       "- Données de départ : ma consommation annuelle totale en kWh, la part en heures creuses si je l'ai, ma puissance et mon offre. Si je joins une facture, lis-la pour y prendre ces informations, et montre-moi ce que tu as retenu.",
       "- Répartition par mois (% du total annuel, de janvier à décembre) :",
       "  - avec chauffage électrique : 15 ; 13 ; 11 ; 7 ; 5 ; 4 ; 4 ; 3,5 ; 4 ; 7 ; 12 ; 14,5 ;",
@@ -1151,7 +1170,51 @@ if (typeof module !== 'undefined') module.exports = EMC;
     launch.hidden = (pc === 'horszone');
     steps.forEach(function (s) { var li = document.createElement('li'); var d = document.createElement('div'); var st = document.createElement('strong'); st.textContent = s[0]; var p = document.createElement('p'); p.textContent = s[1]; d.appendChild(st); d.appendChild(p); li.appendChild(d); launch.appendChild(li); });
 
+    // Le prompt n'apparaît qu'une fois le questionnaire rempli
+    $('tuto-edf').hidden = !(pc === 'factures' && /^EDF/.test(val('fournisseur')));
+    $('tuto-autre-fourn').hidden = !(pc === 'factures' && val('fournisseur') && !/^EDF/.test(val('fournisseur')));
+    var manque = manquantes(r, pc);
+    var complet = !manque.length;
+    if (!complet && pc !== 'horszone') {
+      v.innerHTML = '';
+      var ps2 = document.createElement('span'); ps2.className = 'pill est'; ps2.textContent = 'Questionnaire à compléter'; v.appendChild(ps2);
+      var h = document.createElement('h3'); h.textContent = manque.length === 1 ? 'Encore 1 réponse' : 'Encore ' + manque.length + ' réponses'; v.appendChild(h);
+      var ul2 = document.createElement('ul');
+      manque.forEach(function (m) { var li = document.createElement('li'); var lk = document.createElement('a'); lk.href = '#' + m[1]; lk.textContent = m[0]; lk.addEventListener('click', function (e) { e.preventDefault(); var t = $(m[1]); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); var f = t.querySelector('input, select') || t; if (f.focus) f.focus({ preventScroll: true }); } }); li.appendChild(lk); ul2.appendChild(li); });
+      v.appendChild(ul2);
+      courant = '';
+      view.textContent = '';
+    }
+    $('pz-title').textContent = complet ? 'Votre prompt est prêt' : 'Votre prompt apparaîtra ici';
+    $('pz-sub').textContent = complet ? 'Copiez-le, puis collez-le dans une nouvelle conversation.' : 'Répondez aux questions ci-dessus : le prompt s\'affichera dès que le questionnaire sera complet.';
+    box.hidden = !complet || pc === 'horszone';
+    $('pz-actions').hidden = !complet || pc === 'horszone';
+    launch.hidden = !complet || pc === 'horszone';
+    $('progress').textContent = complet ? 'Questionnaire complet : votre prompt est prêt plus bas.' : (manque.length + ' réponse' + (manque.length > 1 ? 's' : '') + ' à donner avant d\'afficher le prompt.');
+
     sauver();
+  }
+
+  // Questions obligatoires encore sans réponse : [libellé, id du champ]
+  function manquantes(r, pc) {
+    var M = [];
+    if (!r.loc) M.push(['Où se trouve le logement', 'q-loc']);
+    if (pc === 'horszone') return [];
+    if (!r.reseau) M.push(['Qui gère votre réseau', 'q-reseau']);
+    if (r.reseau === 'eld' && !r.eld_export) M.push(['Export de la consommation chez votre gestionnaire', 'q-eld']);
+    if (!r.linky) M.push(['Compteur Linky', 'q-linky']);
+    if (!$('b2').hidden) {
+      if (!r.compte) M.push(['Compte Enedis', 'q-compte']);
+      if (!$('q-horaire').hidden && !r.horaire) M.push(['Consommation heure par heure activée', 'q-horaire']);
+      if (!$('q-appareil').hidden && !r.appareil) M.push(['Où lancer l\'analyse', 'q-appareil']);
+    }
+    if (!r.kva) M.push(['Puissance souscrite', 'kva']);
+    var f = val('fournisseur'), o = val('offre');
+    if (!f || (f === '__autre' && !val('fournisseur_autre'))) M.push(['Fournisseur actuel', 'fournisseur']);
+    else if (!o || (o === '__autre' && !val('offre_autre'))) M.push(['Offre actuelle', 'offre']);
+    if (pc !== 'factures' && !(r.debut && r.fin)) M.push(['Période à analyser', 'q-periode']);
+    if (!$('q-chauffage').hidden && !r.chauffage) M.push(['Chauffage électrique', 'q-chauffage']);
+    return M;
   }
 
   // Mémoire locale des réponses (confort, facultatif)
