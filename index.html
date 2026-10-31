@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Comparez les offres d'électricité sur votre consommation réelle : un questionnaire génère un prompt pour Claude qui lit vos mesures Enedis et calcule l'offre la moins chère aux prix actuels.">
+<meta name="description" content="Comparez les offres d'électricité sur votre consommation réelle : un questionnaire génère un prompt pour Claude qui lit vos mesures Enedis, ou calcule directement le classement à partir de votre consommation annuelle.">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ElecMoinsChere</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -230,6 +230,22 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 .copy.big:hover { filter: brightness(1.05); }
 .open-claude { font-weight: 600; font-size: 16px; }
 .tuto-edf summary { cursor: pointer; }
+.cl-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+table.cl { width: 100%; border-collapse: collapse; font-size: 15px; }
+table.cl th { text-align: left; font-family: var(--font-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.cl td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+table.cl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.cl td.rank { color: var(--muted); font-family: var(--font-mono); font-size: 13px; }
+table.cl .opt { color: var(--muted); font-size: 13.5px; }
+table.cl .pr { font-size: 13.5px; color: var(--ok); }
+table.cl tr.ref td { background: var(--accent-soft); font-weight: 600; }
+table.cl tr.paid td { background: var(--warn-soft); font-weight: 600; border-top: 2px solid var(--warn); border-bottom: 2px solid var(--warn); }
+table.cl tr.paid td:first-child { color: var(--warn); }
+.down { color: var(--ok); } .up { color: #B3261E; }
+:root[data-theme="dark"] .up { color: #F28B82; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .up { color: #F28B82; } }
+.pr-m { display: none; }
+@media (max-width: 600px) { table.cl { font-size: 14px; } table.cl th, table.cl td { padding: 8px; } table.cl th:nth-child(4), table.cl td:nth-child(4) { display: none; } .pr-m { display: block; } }
 .tuto-edf ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
 .legal-links a { color: var(--muted); }
 .pz-actions .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
@@ -498,7 +514,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
           <div class="field">
             <label for="kwh_total">Consommation annuelle (kWh)</label>
             <input type="number" id="kwh_total" name="kwh_total" min="0" step="1" inputmode="numeric" placeholder="ex. 4 500">
-            <p class="hint">Facture de régularisation, ou espace client de votre fournisseur. Vide : Claude vous aidera à l'estimer.</p>
+            <p class="hint">Facture de régularisation, ou espace client de votre fournisseur. Saisissez-la pour voir le classement tout de suite sur cette page.</p>
           </div>
           <div class="field">
             <label for="kwh_hc">Dont heures creuses (kWh, facultatif)</label>
@@ -514,6 +530,20 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
       </div>
 
       <button class="reset" id="reset" type="button">Effacer mes réponses</button>
+    </section>
+
+    <section id="classement" hidden>
+      <span class="kicker">Votre classement · calculé sur cette page</span>
+      <h2>Les offres pour <span id="cl-kwh"></span> par an</h2>
+      <p class="hint" id="cl-hyp"></p>
+      <div class="cl-box">
+        <table class="cl">
+          <thead><tr><th scope="col">#</th><th scope="col">Fournisseur – offre</th><th scope="col" class="num">Coût 1<sup>re</sup> année</th><th scope="col">Promotion</th><th scope="col" class="num">Écart vs votre contrat</th><th scope="col" class="num" id="cl-th-paye">Écart vs payé</th></tr></thead>
+          <tbody id="cl-rows"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="cl-notes"></p>
+      <p class="hint">Pour un classement sur vos vraies heures (Tempo, heures creuses, saisons), utilisez le prompt avec l'application Claude sur ordinateur et votre espace Enedis.</p>
     </section>
 
     <section id="prompt">
@@ -626,7 +656,7 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 // Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
 // a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
 var EMC = (function () {
-  var VERSION = 'v9';
+  var VERSION = 'v10';
   var VERSION_DATE = '31 oct. 2026';
 
   var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
@@ -912,7 +942,7 @@ var EMC = (function () {
       "- Saisons avec heures super creuses (Zen Estival…) : applique les plages de plages_horaires ; si une saison a un prix « hsc » sans plage décrite, n'en compte pas pour cette saison et signale-le.",
       "- Autres options (Zen Flex, Eco Fixe 2 saisons…) : calcule-les avec leurs plages_horaires ; si une plage n'est pas calculable (jours Sobriété non publiés, par exemple), écarte l'offre et dis-le.",
       "- Promotions : déduis la valeur de la promotion en cours sur les 12 premiers mois (2 mois d'abonnement offerts = 2/12 de l'abonnement annuel ; un bonus de 50 € = −50 €). Si elle ne s'applique pas à moi (déjà client de ce fournisseur, par exemple), ne la déduis pas et signale-le. Le classement tient compte des promotions ; garde aussi le coût sans promotion pour la deuxième année.",
-      "- Mon contrat actuel : son coût aux prix d'aujourd'hui sert de référence, jamais un montant payé dans le passé. Si je t'ai donné ce que j'ai payé, sers-t'en seulement pour contrôler la cohérence, en expliquant l'écart (prix de l'époque).",
+      "- Mon contrat actuel : son coût aux prix d'aujourd'hui sert de référence. Si je t'ai donné ce que j'ai payé, montre-le aussi dans le tableau (étape 7) pour que je compare, et explique l'écart avec mon contrat aux prix actuels (prix de l'époque, période différente).",
       "- Fais tous les calculs dans du code exécuté, jamais de tête (si tu ne peux pas exécuter de code, calcule offre par offre en montrant chaque opération). Regroupe d'abord la consommation en totaux par plage (total, HP/HC, Tempo par couleur et plage, OctoSaisons, semaine/week-end et kWh par jour de semaine, saisons été/hiver avec HP/HC/HSC, totaux mensuels) ; seuls ces totaux reviennent dans la conversation, puis le coût de chaque offre se calcule dans un script."
     ].join('\n');
   }
@@ -921,7 +951,7 @@ var EMC = (function () {
     return [
       "## Étape 7 — Me rendre le résultat\n",
       "1. Une ligne de synthèse : période, total en kWh, part en heures creuses (%), créneau d'heures creuses, puissance, date de mise à jour des prix, et précision de l'analyse (complète, partielle ou estimée, avec la part estimée).",
-      "2. Le tableau principal, trié du moins cher au plus cher, une seule ligne par offre (fournisseur + nom d'offre) qui garde la moins chère de ses options, avec seulement quatre colonnes : Fournisseur – offre (lien cliquable vers la page de l'offre chez le fournisseur, au format [Fournisseur – offre](adresse), trouvé à l'étape 5a ; si seul le site du fournisseur est connu, ajoute « (site du fournisseur) » après le lien) | Meilleur coût (promotion déduite, option retenue entre parenthèses) | Promo en cours (description courte et valeur en euros la première année, ou « – ») | Écart vs mon contrat actuel. Mon contrat apparaît en gras avec la mention « réf. ». Les offres Tempo et OctoSaisons y figurent aussi. Dans la colonne Écart : 🟢 devant le montant quand l'offre est moins chère, 🔴 quand elle est plus chère. Sous le tableau, une ligne précise que les offres avec promotion coûteront plus cher à partir de la deuxième année. Si l'analyse est estimée, marque d'un « ~ » les coûts des offres à couleurs et à saisons.",
+      "2. Le tableau principal, trié du moins cher au plus cher, une seule ligne par offre (fournisseur + nom d'offre) qui garde la moins chère de ses options, avec seulement quatre colonnes : Fournisseur – offre (lien cliquable vers la page de l'offre chez le fournisseur, au format [Fournisseur – offre](adresse), trouvé à l'étape 5a ; si seul le site du fournisseur est connu, ajoute « (site du fournisseur) » après le lien) | Meilleur coût (promotion déduite, option retenue entre parenthèses) | Promo en cours (description courte et valeur en euros la première année, ou « – ») | Écart vs mon contrat actuel. Mon contrat apparaît en gras avec la mention « réf. ». Les offres Tempo et OctoSaisons y figurent aussi. Dans la colonne Écart : 🟢 devant le montant quand l'offre est moins chère, 🔴 quand elle est plus chère. Sous le tableau, une ligne précise que les offres avec promotion coûteront plus cher à partir de la deuxième année. Si l'analyse est estimée, marque d'un « ~ » les coûts des offres à couleurs et à saisons. Si je t'ai donné le montant réellement payé, ajoute-le dans le tableau, à sa place dans le classement, sur une ligne en gras « 💶 Payé réellement : X € (prix de l'époque) », et ajoute une 5e colonne « Écart vs payé » pour chaque offre ; précise sous le tableau que ce montant a été payé aux prix de l'époque.",
       "3. Le détail Tempo : kWh HP et HC, et coût, pour les jours bleus, blancs et rouges ; plus le coût Tempo si ma consommation en heures pleines les jours rouges était ramenée au prix d'un jour bleu.",
       "4. Le détail OctoSaisons par saison.",
       "5. Trois à quatre points à retenir : l'option la plus adaptée à mon profil, l'économie possible, et les conditions dans lesquelles une offre à couleurs deviendrait rentable. Si l'analyse est partielle ou estimée, ajoute comment obtenir une analyse complète (activer la consommation horaire, revenir dans X mois).",
@@ -1185,8 +1215,9 @@ if (typeof module !== 'undefined') module.exports = EMC;
       courant = '';
       view.textContent = '';
     }
-    $('pz-title').textContent = complet ? 'Votre prompt est prêt' : 'Votre prompt apparaîtra ici';
-    $('pz-sub').textContent = complet ? 'Copiez-le, puis collez-le dans une nouvelle conversation.' : 'Répondez aux questions ci-dessus : le prompt s\'affichera dès que le questionnaire sera complet.';
+    var aClassement = classement(r, pc);
+    $('pz-title').textContent = complet ? (aClassement ? 'Pour aller plus loin avec Claude' : 'Votre prompt est prêt') : 'Votre prompt apparaîtra ici';
+    $('pz-sub').textContent = complet ? (aClassement ? 'Facultatif : le classement ci-dessus suffit. Claude peut en plus lire votre facture, chercher les pages des offres et détailler le calcul.' : 'Copiez-le, puis collez-le dans une nouvelle conversation.') : 'Répondez aux questions ci-dessus : le prompt s\'affichera dès que le questionnaire sera complet.';
     box.hidden = !complet || pc === 'horszone';
     $('pz-actions').hidden = !complet || pc === 'horszone';
     launch.hidden = !complet || pc === 'horszone';
@@ -1263,7 +1294,127 @@ if (typeof module !== 'undefined') module.exports = EMC;
   var exp = $('expand-btn');
   exp.addEventListener('click', function () { var open = view.style.maxHeight === 'none'; view.style.maxHeight = open ? '' : 'none'; exp.textContent = open ? 'Afficher en entier' : 'Réduire'; });
 
+  // ===== Classement calculé sur la page (parcours consommation annuelle) =====
+  var PRIX = null;
+  var LIVE_URL = 'https://raw.githubusercontent.com/NicolasPopy/elec-moins-chere-prix/main/data/offres.json';
+  function chargerPrix() {
+    return fetch(LIVE_URL, { cache: 'no-store' }).then(function (x) { if (!x.ok) throw 0; return x.json(); })
+      .catch(function () { return fetch('data/offres.json').then(function (x) { return x.json(); }); })
+      .then(function (d) { PRIX = d; rendre(); }).catch(function () {});
+  }
+  // Répartition de la consommation par mois (janvier → décembre), mêmes hypothèses que le prompt
+  var MOIS = {
+    oui: [15, 13, 11, 7, 5, 4, 4, 3.5, 4, 7, 12, 14.5],
+    non: [10.5, 9.5, 9, 8, 7.5, 7, 7, 6.5, 7, 8, 9.5, 10.5]
+  };
+  var JOURS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  function eur0(v) { return Math.round(v).toLocaleString('fr-FR') + ' €'; }
+  function ecart(v, ref) {
+    var d = v - ref, sp = document.createElement('span');
+    sp.className = d < -0.5 ? 'down' : (d > 0.5 ? 'up' : '');
+    sp.textContent = (d > 0.5 ? '+' : (d < -0.5 ? '−' : '')) + Math.abs(Math.round(d)).toLocaleString('fr-FR') + ' €';
+    return sp;
+  }
+  function idOffreActuelle() {
+    var lab = val('offre'), f = val('fournisseur');
+    var e = OFFRES.filter(function (x) { return x[0] === f; })[0];
+    if (!e) return null;
+    var m = e[1].filter(function (o) { return o[1] === lab; })[0];
+    return m ? m[0] : null;
+  }
+  function coutOffre(o, kva, E, h, ch) {
+    var g = (o.grille || []).filter(function (x) { return x.kva === kva; })[0];
+    if (!g || g.abonnement_mois == null) return null;
+    var p = g.prix_kwh || {}, energie = null, approx = false;
+    var M = ch === 'oui' ? MOIS.oui : ch === 'non' ? MOIS.non : MOIS.oui.map(function (v, i) { return (v + MOIS.non[i]) / 2; });
+    var hiver = [10, 11, 0, 1, 2].reduce(function (s, i) { return s + M[i]; }, 0) / 100;
+    if (o.option === 'base' && p.base != null) energie = E * p.base;
+    else if (o.option === 'hphc' && p.hp != null) energie = E * (1 - h) * p.hp + E * h * p.hc;
+    else if (o.option === 'week_end' && p.semaine != null) {
+      var we = /plus/i.test(o.id) ? 0.47 : 0.34; approx = true;
+      energie = E * (1 - we) * p.semaine + E * we * p.week_end;
+    } else if (o.option === 'tempo' && p.bleu_hp != null) {
+      var f = ch === 'oui' ? 1.3 : ch === 'non' ? 1.1 : 1.2;
+      var jour = function (i) { return E * M[i] / 100 / JOURS[i]; };
+      var rouge = 22 * (jour(11) + jour(0) + jour(1)) / 3 * f;
+      var blanc = 43 * ([10, 11, 0, 1, 2].reduce(function (s, i) { return s + jour(i); }, 0) / 5) * f;
+      var bleu = E - rouge - blanc; approx = true;
+      energie = bleu * ((1 - h) * p.bleu_hp + h * p.bleu_hc) + blanc * ((1 - h) * p.blanc_hp + h * p.blanc_hc) + rouge * ((1 - h) * p.rouge_hp + h * p.rouge_hc);
+    } else if (o.option === 'saisons' && p.hiver != null && p.ete != null && p.hiver_hp == null) {
+      energie = E * hiver * p.hiver + E * (1 - hiver) * p.ete; approx = true;
+    } else if (o.option === 'saisons' && p.hiver_hp != null && p.ete_hsc == null && p.hiver_hsc == null) {
+      energie = E * hiver * ((1 - h) * p.hiver_hp + h * p.hiver_hc) + E * (1 - hiver) * ((1 - h) * p.ete_hp + h * p.ete_hc); approx = true;
+    }
+    if (energie == null) return null;
+    var total = g.abonnement_mois * 12 + energie;
+    var promo = (o.promotions || []).filter(function (x) { return !x.date_fin || x.date_fin >= new Date().toISOString().slice(0, 10); })
+      .reduce(function (s, x) { return s + (x.valeur_an1_eur || 0) + (x.mois_abonnement_offerts ? x.mois_abonnement_offerts * g.abonnement_mois : 0); }, 0);
+    return { total: total, avecPromo: total - promo, promo: promo, promoTxt: (o.promotions || []).map(function (x) { return x.description; }).join(' ; '), approx: approx, ferme: g.ouvert_nouveaux_clients === false || o.ouvert_nouveaux_clients === false };
+  }
+  function classement(r, pc) {
+    var sec = $('classement');
+    var E = parseFloat(r.kwh_total), kva = parseInt(r.kva, 10);
+    if (pc !== 'factures' || !PRIX || !(E > 0) || !(kva > 0)) { sec.hidden = true; return false; }
+    var actuelId = idOffreActuelle(), actuel = PRIX.offres.filter(function (o) { return o.id === actuelId; })[0];
+    var hcDonne = parseFloat(r.kwh_hc) > 0 && parseFloat(r.kwh_hc) < E;
+    var h = hcDonne ? parseFloat(r.kwh_hc) / E : ((actuel && /hphc|tempo/.test(actuel.option)) ? 0.30 : 0.25);
+    var FN = {}; PRIX.fournisseurs.forEach(function (f) { FN[f.id] = f; });
+    var lignes = {}, nonCalc = [];
+    PRIX.offres.forEach(function (o) {
+      var c = coutOffre(o, kva, E, h, r.chauffage);
+      if (!c) { if ((o.grille || []).some(function (g) { return g.kva === kva; })) nonCalc.push((FN[o.fournisseur] || {}).nom + ' ' + o.offre); return; }
+      var estActuel = actuel && o.id === actuel.id;
+      if (c.ferme && !estActuel) return;
+      var cle = o.fournisseur + '|' + o.offre;
+      if (estActuel) { lignes['__ref'] = { o: o, c: c, ref: true }; c = Object.assign({}, c, { avecPromo: c.total, promo: 0 }); lignes['__ref'].c = c; return; }
+      if (!lignes[cle] || c.avecPromo < lignes[cle].c.avecPromo) lignes[cle] = { o: o, c: c };
+    });
+    var L = Object.keys(lignes).map(function (k) { return lignes[k]; });
+    var paye = parseFloat(r.montant) > 0 ? parseFloat(r.montant) : null;
+    if (paye) L.push({ paid: true, c: { avecPromo: paye } });
+    L.sort(function (a, b) { return a.c.avecPromo - b.c.avecPromo; });
+    var ref = lignes['__ref'] ? lignes['__ref'].c.avecPromo : null;
+    var OPT = { base: 'Base', hphc: 'Heures creuses', tempo: 'Tempo', week_end: 'Week-end', saisons: 'Saisons' };
+    var tb = $('cl-rows'); tb.innerHTML = '';
+    var rang = 0;
+    L.forEach(function (x) {
+      var tr = document.createElement('tr'), td = function (cls, t) { var e = document.createElement('td'); if (cls) e.className = cls; if (t != null) e.textContent = t; tr.appendChild(e); return e; };
+      if (x.paid) {
+        tr.className = 'paid';
+        td('rank', '€'); td(null, 'Payé réellement (vos factures, prix de l\'époque)'); td('num', eur0(paye)); td(null, '–');
+        var e1 = td('num'); if (ref != null) e1.appendChild(ecart(paye, ref)); else e1.textContent = '–';
+        td('num', 'réf.');
+      } else {
+        if (!x.ref) rang++;
+        if (x.ref) tr.className = 'ref';
+        td('rank', x.ref ? 'réf.' : String(rang));
+        var n = td(null); var fn = (FN[x.o.fournisseur] || {}), a = document.createElement('a');
+        a.href = fn.site || '#'; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (fn.nom || x.o.fournisseur) + ' – ' + x.o.offre; n.appendChild(a);
+        var op = document.createElement('div'); op.className = 'opt'; op.textContent = (OPT[x.o.option] || x.o.option) + (x.ref ? ' · votre contrat, aux prix actuels' : ''); n.appendChild(op);
+        if (x.c.promo > 0) { var pm = document.createElement('div'); pm.className = 'pr pr-m'; pm.textContent = 'Promo −' + eur0(x.c.promo) + ' la 1re année'; n.appendChild(pm); }
+        td('num', (x.c.approx ? '~' : '') + eur0(x.c.avecPromo));
+        var pr = td(); if (x.c.promo > 0) { var s1 = document.createElement('span'); s1.className = 'pr'; s1.textContent = '−' + eur0(x.c.promo) + ' · ' + x.c.promoTxt; pr.appendChild(s1); } else pr.textContent = '–';
+        var e2 = td('num'); if (x.ref) e2.textContent = 'réf.'; else if (ref != null) e2.appendChild(ecart(x.c.avecPromo, ref)); else e2.textContent = '–';
+        var e3 = td('num'); if (paye) e3.appendChild(ecart(x.c.avecPromo, paye)); else e3.textContent = '–';
+      }
+      tb.appendChild(tr);
+    });
+    $('cl-th-paye').hidden = !paye;
+    tb.querySelectorAll('tr').forEach(function (tr) { tr.lastChild.hidden = !paye; });
+    $('cl-kwh').textContent = E.toLocaleString('fr-FR') + ' kWh';
+    $('cl-hyp').textContent = 'Puissance ' + kva + ' kVA · heures creuses : ' + Math.round(h * 100) + ' %' + (hcDonne ? ' (vos chiffres)' : ' (estimation)') + ' · prix TTC du ' + (PRIX.meta.mis_a_jour_le || '').split('-').reverse().join('/') + ' · promotions déduites de la 1re année.';
+    var notes = ['« ~ » : estimation (Tempo, week-end, saisons) à partir d\'une répartition moyenne de la consommation sur l\'année' + (r.chauffage ? '' : ' ; indiquez si vous avez un chauffage électrique pour l\'affiner') + '.'];
+    if (!actuel) notes.push('Choisissez votre offre actuelle dans la liste pour afficher l\'écart avec votre contrat.');
+    if (paye) notes.push('Le montant payé l\'a été aux prix de l\'époque ; les autres lignes sont aux prix actuels.');
+    if (nonCalc.length) notes.push('Non calculées ici (heures réelles nécessaires ou prix incomplet) : ' + nonCalc.join(', ') + '.');
+    notes.push('Les offres avec promotion coûteront plus cher à partir de la 2e année.');
+    $('cl-notes').textContent = notes.join(' ');
+    sec.hidden = false;
+    return true;
+  }
+
   rendre();
+  chargerPrix();
 
   // Illustration : petite courbe d'une journée (heures creuses 22h-6h)
   (function () {
