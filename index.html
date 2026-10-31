@@ -251,6 +251,8 @@ table.cl .pr { font-size: 12.5px; color: var(--ok); white-space: nowrap; }
 table.cl tr.ref td { background: var(--accent-soft); font-weight: 600; }
 .cl-box .linkbtn { padding: 8px 10px; }
 .cl-hyp { font-size: 13px; color: var(--muted); }
+.cl-warn { background: var(--warn-soft); border-left: 3px solid var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 14.5px; }
+.why-claude { background: var(--hc-soft); border-left: 3px solid var(--hc); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; font-size: 15.5px; }
 .down { color: var(--ok); } .up { color: #B3261E; }
 :root[data-theme="dark"] .up { color: #F28B82; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .up { color: #F28B82; } }
@@ -330,6 +332,11 @@ table.cl tr.ref td { background: var(--accent-soft); font-weight: 600; }
       <span class="kicker">Pourquoi c'est plus juste</span>
       <h2>Vos vraies mesures Enedis, pas une moyenne</h2>
       <p class="prose-p">Votre compteur Linky enregistre votre consommation toutes les 30 minutes et la transmet à Enedis. Claude récupère ces relevés réels dans votre espace Enedis, sur 12 mois, puis calcule ce que chaque heure vous aurait coûté avec chaque offre, aux prix d'aujourd'hui.</p>
+      <div class="why-claude">
+        <strong>Pourquoi passer par Claude&nbsp;?</strong>
+        <p>Vos relevés heure par heure sont dans votre espace client Enedis, derrière votre mot de passe. Ce site ne peut pas les lire à votre place. L'application Claude sur ordinateur, elle, ouvre cet espace dans son navigateur pendant que vous êtes connecté et récupère les relevés&nbsp;: c'est la seule façon d'obtenir le classement précis.</p>
+        <p>Sans Claude et Enedis, le classement part de votre consommation annuelle. Il est calculé directement sur ce site, mais il est <strong>moins précis</strong>, surtout pour Tempo, les heures creuses et les offres à saisons.</p>
+      </div>
       <div class="facts">
         <div class="fact">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M9 20V4M14 20v-7M19 20V8"/></svg>
@@ -544,6 +551,7 @@ table.cl tr.ref td { background: var(--accent-soft); font-weight: 600; }
     <section id="classement" hidden>
       <span class="kicker">Votre classement · calculé sur cette page</span>
       <h2>Les offres pour <span id="cl-kwh"></span> par an</h2>
+      <p class="cl-warn"><strong>Classement approximatif</strong> : calculé à partir de votre total annuel. Pour le classement précis, sur vos vrais relevés heure par heure, il faut l'application Claude sur ordinateur et votre espace Enedis.</p>
       <div class="cl-sum" id="cl-sum"></div>
       <div class="cl-box">
         <table class="cl">
