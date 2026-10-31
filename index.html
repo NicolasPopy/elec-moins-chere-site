@@ -230,22 +230,31 @@ ul.guard { margin: 0; padding-left: 20px; display: grid; gap: 4px; grid-template
 .copy.big:hover { filter: brightness(1.05); }
 .open-claude { font-weight: 600; font-size: 16px; }
 .tuto-edf summary { cursor: pointer; }
-.cl-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
-table.cl { width: 100%; border-collapse: collapse; font-size: 15px; }
-table.cl th { text-align: left; font-family: var(--font-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-table.cl td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+.cl-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cl-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.tile { border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; border: 1px solid var(--line); background: var(--surface); min-width: 0; }
+.tile .tl { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.tile strong { font-family: var(--font-display); font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .ts { font-size: 13.5px; color: var(--muted); }
+.tile.past { background: var(--warn-soft); border-color: var(--warn); }
+.tile.next { background: var(--accent-soft); border-color: var(--accent-ink); }
+.tile.best { border-color: var(--ok); }
+.tile.best strong { color: var(--ok); }
+table.cl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+table.cl th { text-align: left; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.cl td { padding: 6px 10px; border-top: 1px solid var(--line); vertical-align: baseline; line-height: 1.35; }
 table.cl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-table.cl td.rank { color: var(--muted); font-family: var(--font-mono); font-size: 13px; }
-table.cl .opt { color: var(--muted); font-size: 13.5px; }
-table.cl .pr { font-size: 13.5px; color: var(--ok); }
+table.cl td.rank { color: var(--muted); font-family: var(--font-mono); font-size: 12.5px; width: 2.5em; }
+table.cl td.name a { font-weight: 500; }
+table.cl .opt { color: var(--muted); font-size: 13px; }
+table.cl .pr { font-size: 12.5px; color: var(--ok); white-space: nowrap; }
 table.cl tr.ref td { background: var(--accent-soft); font-weight: 600; }
-table.cl tr.paid td { background: var(--warn-soft); font-weight: 600; border-top: 2px solid var(--warn); border-bottom: 2px solid var(--warn); }
-table.cl tr.paid td:first-child { color: var(--warn); }
+.cl-box .linkbtn { padding: 8px 10px; }
+.cl-hyp { font-size: 13px; color: var(--muted); }
 .down { color: var(--ok); } .up { color: #B3261E; }
 :root[data-theme="dark"] .up { color: #F28B82; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .up { color: #F28B82; } }
-.pr-m { display: none; }
-@media (max-width: 600px) { table.cl { font-size: 14px; } table.cl th, table.cl td { padding: 8px; } table.cl th:nth-child(4), table.cl td:nth-child(4) { display: none; } .pr-m { display: block; } }
+@media (max-width: 600px) { table.cl { font-size: 13.5px; } table.cl th, table.cl td { padding: 6px 7px; } table.cl th:first-child, table.cl td.rank { display: none; } table.cl .opt, table.cl .pr { display: block; } .tile strong { font-size: 24px; } .cl-sum { grid-template-columns: 1fr 1fr; } .tile.best { grid-column: 1 / -1; } }
 .tuto-edf ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
 .legal-links a { color: var(--muted); }
 .pz-actions .meta { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
@@ -535,15 +544,15 @@ table.cl tr.paid td:first-child { color: var(--warn); }
     <section id="classement" hidden>
       <span class="kicker">Votre classement · calculé sur cette page</span>
       <h2>Les offres pour <span id="cl-kwh"></span> par an</h2>
-      <p class="hint" id="cl-hyp"></p>
+      <div class="cl-sum" id="cl-sum"></div>
       <div class="cl-box">
         <table class="cl">
-          <thead><tr><th scope="col">#</th><th scope="col">Fournisseur – offre</th><th scope="col" class="num">Coût 1<sup>re</sup> année</th><th scope="col">Promotion</th><th scope="col" class="num">Écart vs votre contrat</th><th scope="col" class="num" id="cl-th-paye">Écart vs payé</th></tr></thead>
+          <thead><tr><th scope="col">#</th><th scope="col">Offre</th><th scope="col" class="num">L'an prochain</th><th scope="col" class="num">vs contrat</th></tr></thead>
           <tbody id="cl-rows"></tbody>
         </table>
+        <button class="linkbtn" id="cl-more" type="button"></button>
       </div>
-      <p class="hint" id="cl-notes"></p>
-      <p class="hint">Pour un classement sur vos vraies heures (Tempo, heures creuses, saisons), utilisez le prompt avec l'application Claude sur ordinateur et votre espace Enedis.</p>
+      <p class="cl-hyp" id="cl-hyp"></p>
     </section>
 
     <section id="prompt">
@@ -656,7 +665,7 @@ table.cl tr.paid td:first-child { color: var(--warn); }
 // Générateur du prompt ElecMoinsChere : construit le prompt à partir des réponses du questionnaire.
 // a = {} (aucune réponse) donne la version complète, qui pose elle-même toutes les questions.
 var EMC = (function () {
-  var VERSION = 'v10';
+  var VERSION = 'v11';
   var VERSION_DATE = '31 oct. 2026';
 
   var TUTO_RESEAU = "Pour savoir qui gère votre réseau : regardez votre facture d'électricité, à la rubrique dépannage ou acheminement. Si le numéro de dépannage est 09 726 750 suivi du numéro de votre département, ou si le nom Enedis apparaît, c'est Enedis (plus de 95 % des foyers). Sinon, c'est une entreprise locale : Strasbourg Électricité Réseaux, GreenAlp (Grenoble), Réséda (Metz), SRD (Vienne), Gérédis (Deux-Sèvres), une SICAE, Vialis (Colmar)…";
@@ -951,7 +960,7 @@ var EMC = (function () {
     return [
       "## Étape 7 — Me rendre le résultat\n",
       "1. Une ligne de synthèse : période, total en kWh, part en heures creuses (%), créneau d'heures creuses, puissance, date de mise à jour des prix, et précision de l'analyse (complète, partielle ou estimée, avec la part estimée).",
-      "2. Le tableau principal, trié du moins cher au plus cher, une seule ligne par offre (fournisseur + nom d'offre) qui garde la moins chère de ses options, avec seulement quatre colonnes : Fournisseur – offre (lien cliquable vers la page de l'offre chez le fournisseur, au format [Fournisseur – offre](adresse), trouvé à l'étape 5a ; si seul le site du fournisseur est connu, ajoute « (site du fournisseur) » après le lien) | Meilleur coût (promotion déduite, option retenue entre parenthèses) | Promo en cours (description courte et valeur en euros la première année, ou « – ») | Écart vs mon contrat actuel. Mon contrat apparaît en gras avec la mention « réf. ». Les offres Tempo et OctoSaisons y figurent aussi. Dans la colonne Écart : 🟢 devant le montant quand l'offre est moins chère, 🔴 quand elle est plus chère. Sous le tableau, une ligne précise que les offres avec promotion coûteront plus cher à partir de la deuxième année. Si l'analyse est estimée, marque d'un « ~ » les coûts des offres à couleurs et à saisons. Si je t'ai donné le montant réellement payé, ajoute-le dans le tableau, à sa place dans le classement, sur une ligne en gras « 💶 Payé réellement : X € (prix de l'époque) », et ajoute une 5e colonne « Écart vs payé » pour chaque offre ; précise sous le tableau que ce montant a été payé aux prix de l'époque.",
+      "2. Le tableau principal, trié du moins cher au plus cher, une seule ligne par offre (fournisseur + nom d'offre) qui garde la moins chère de ses options, avec seulement quatre colonnes : Fournisseur – offre (lien cliquable vers la page de l'offre chez le fournisseur, au format [Fournisseur – offre](adresse), trouvé à l'étape 5a ; si seul le site du fournisseur est connu, ajoute « (site du fournisseur) » après le lien) | Meilleur coût (promotion déduite, option retenue entre parenthèses) | Promo en cours (description courte et valeur en euros la première année, ou « – ») | Écart vs mon contrat actuel. Mon contrat apparaît en gras avec la mention « réf. ». Les offres Tempo et OctoSaisons y figurent aussi. Dans la colonne Écart : 🟢 devant le montant quand l'offre est moins chère, 🔴 quand elle est plus chère. Sous le tableau, une ligne précise que les offres avec promotion coûteront plus cher à partir de la deuxième année. Si l'analyse est estimée, marque d'un « ~ » les coûts des offres à couleurs et à saisons. Si je t'ai donné le montant réellement payé, mets juste avant le tableau deux lignes bien visibles : « 💶 Année passée (payé) : X € » et « 📅 Année à venir avec mon contrat actuel : Y € », avec l'écart entre les deux ; précise que l'année passée était aux prix de l'époque.",
       "3. Le détail Tempo : kWh HP et HC, et coût, pour les jours bleus, blancs et rouges ; plus le coût Tempo si ma consommation en heures pleines les jours rouges était ramenée au prix d'un jour bleu.",
       "4. Le détail OctoSaisons par saison.",
       "5. Trois à quatre points à retenir : l'option la plus adaptée à mon profil, l'économie possible, et les conditions dans lesquelles une offre à couleurs deviendrait rentable. Si l'analyse est partielle ou estimée, ajoute comment obtenir une analyse complète (activer la consommation horaire, revenir dans X mois).",
@@ -1376,43 +1385,61 @@ if (typeof module !== 'undefined') module.exports = EMC;
     var ref = lignes['__ref'] ? lignes['__ref'].c.avecPromo : null;
     var OPT = { base: 'Base', hphc: 'Heures creuses', tempo: 'Tempo', week_end: 'Week-end', saisons: 'Saisons' };
     var tb = $('cl-rows'); tb.innerHTML = '';
-    var rang = 0;
-    L.forEach(function (x) {
-      var tr = document.createElement('tr'), td = function (cls, t) { var e = document.createElement('td'); if (cls) e.className = cls; if (t != null) e.textContent = t; tr.appendChild(e); return e; };
-      if (x.paid) {
-        tr.className = 'paid';
-        td('rank', '€'); td(null, 'Payé réellement (vos factures, prix de l\'époque)'); td('num', eur0(paye)); td(null, '–');
-        var e1 = td('num'); if (ref != null) e1.appendChild(ecart(paye, ref)); else e1.textContent = '–';
-        td('num', 'réf.');
-      } else {
-        if (!x.ref) rang++;
-        if (x.ref) tr.className = 'ref';
-        td('rank', x.ref ? 'réf.' : String(rang));
-        var n = td(null); var fn = (FN[x.o.fournisseur] || {}), a = document.createElement('a');
-        a.href = fn.site || '#'; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (fn.nom || x.o.fournisseur) + ' – ' + x.o.offre; n.appendChild(a);
-        var op = document.createElement('div'); op.className = 'opt'; op.textContent = (OPT[x.o.option] || x.o.option) + (x.ref ? ' · votre contrat, aux prix actuels' : ''); n.appendChild(op);
-        if (x.c.promo > 0) { var pm = document.createElement('div'); pm.className = 'pr pr-m'; pm.textContent = 'Promo −' + eur0(x.c.promo) + ' la 1re année'; n.appendChild(pm); }
-        td('num', (x.c.approx ? '~' : '') + eur0(x.c.avecPromo));
-        var pr = td(); if (x.c.promo > 0) { var s1 = document.createElement('span'); s1.className = 'pr'; s1.textContent = '−' + eur0(x.c.promo) + ' · ' + x.c.promoTxt; pr.appendChild(s1); } else pr.textContent = '–';
-        var e2 = td('num'); if (x.ref) e2.textContent = 'réf.'; else if (ref != null) e2.appendChild(ecart(x.c.avecPromo, ref)); else e2.textContent = '–';
-        var e3 = td('num'); if (paye) e3.appendChild(ecart(x.c.avecPromo, paye)); else e3.textContent = '–';
-      }
+    var offres = L.filter(function (x) { return !x.paid && !x.ref; });
+    var meilleure = offres[0];
+    var refL = lignes['__ref'];
+    // Synthèse : année passée (payé) / année à venir (contrat) / meilleure offre
+    var sum = $('cl-sum'); sum.innerHTML = '';
+    function tuile(cls, lab, val, sub) {
+      var d = document.createElement('div'); d.className = 'tile ' + cls;
+      var l = document.createElement('span'); l.className = 'tl'; l.textContent = lab; d.appendChild(l);
+      var v = document.createElement('strong'); v.textContent = val; d.appendChild(v);
+      if (sub) { var sb = document.createElement('span'); sb.className = 'ts'; if (typeof sub === 'string') sb.textContent = sub; else sb.appendChild(sub); d.appendChild(sb); }
+      sum.appendChild(d);
+    }
+    if (paye) tuile('past', 'Année passée · payé', eur0(paye), 'vos factures, aux prix de l\'époque');
+    if (refL) {
+      var sub1 = document.createElement('span');
+      sub1.textContent = refL.o.offre + (paye ? ' · ' : '');
+      if (paye) { sub1.appendChild(ecart(ref, paye)); sub1.appendChild(document.createTextNode(' vs l\'an passé')); }
+      tuile('next', 'Année à venir · votre contrat', (refL.c.approx ? '~' : '') + eur0(ref), sub1);
+    } else tuile('next', 'Année à venir · votre contrat', '–', 'choisissez votre offre actuelle');
+    if (meilleure) {
+      var sub2 = document.createElement('span');
+      sub2.textContent = (FN[meilleure.o.fournisseur] || {}).nom + ' – ' + meilleure.o.offre + (ref != null ? ' · ' : '');
+      if (ref != null) sub2.appendChild(ecart(meilleure.c.avecPromo, ref));
+      tuile('best', 'Année à venir · meilleure offre', (meilleure.c.approx ? '~' : '') + eur0(meilleure.c.avecPromo), sub2);
+    }
+    // Tableau compact : 8 premières offres + votre contrat, le reste repliable
+    var MAX = 8, tout = !!classement.tout, rang = 0;
+    var liste = L.filter(function (x) { return !x.paid; });
+    liste.forEach(function (x) {
+      if (!x.ref) rang++;
+      var visible = tout || x.ref || rang <= MAX;
+      if (!visible) return;
+      var tr = document.createElement('tr'); if (x.ref) tr.className = 'ref';
+      var td = function (cls, t) { var e = document.createElement('td'); if (cls) e.className = cls; if (t != null) e.textContent = t; tr.appendChild(e); return e; };
+      td('rank', x.ref ? 'réf.' : String(rang));
+      var n = td('name'); var fn = (FN[x.o.fournisseur] || {}), a = document.createElement('a');
+      a.href = fn.site || '#'; a.target = '_blank'; a.rel = 'noopener'; a.textContent = (fn.nom || x.o.fournisseur) + ' – ' + x.o.offre; n.appendChild(a);
+      var op = document.createElement('span'); op.className = 'opt'; op.textContent = ' ' + (OPT[x.o.option] || x.o.option) + (x.ref ? ' · votre contrat' : ''); n.appendChild(op);
+      if (x.c.promo > 0) { var pm = document.createElement('span'); pm.className = 'pr'; pm.title = x.c.promoTxt; pm.textContent = ' promo −' + eur0(x.c.promo); n.appendChild(pm); }
+      td('num', (x.c.approx ? '~' : '') + eur0(x.c.avecPromo));
+      var e2 = td('num'); if (x.ref) e2.textContent = '–'; else if (ref != null) e2.appendChild(ecart(x.c.avecPromo, ref)); else e2.textContent = '–';
       tb.appendChild(tr);
     });
-    $('cl-th-paye').hidden = !paye;
-    tb.querySelectorAll('tr').forEach(function (tr) { tr.lastChild.hidden = !paye; });
+    var nb = offres.length;
+    $('cl-more').hidden = nb <= MAX;
+    $('cl-more').textContent = tout ? 'Afficher seulement les ' + MAX + ' premières' : 'Voir les ' + nb + ' offres';
     $('cl-kwh').textContent = E.toLocaleString('fr-FR') + ' kWh';
-    $('cl-hyp').textContent = 'Puissance ' + kva + ' kVA · heures creuses : ' + Math.round(h * 100) + ' %' + (hcDonne ? ' (vos chiffres)' : ' (estimation)') + ' · prix TTC du ' + (PRIX.meta.mis_a_jour_le || '').split('-').reverse().join('/') + ' · promotions déduites de la 1re année.';
-    var notes = ['« ~ » : estimation (Tempo, week-end, saisons) à partir d\'une répartition moyenne de la consommation sur l\'année' + (r.chauffage ? '' : ' ; indiquez si vous avez un chauffage électrique pour l\'affiner') + '.'];
-    if (!actuel) notes.push('Choisissez votre offre actuelle dans la liste pour afficher l\'écart avec votre contrat.');
-    if (paye) notes.push('Le montant payé l\'a été aux prix de l\'époque ; les autres lignes sont aux prix actuels.');
-    if (nonCalc.length) notes.push('Non calculées ici (heures réelles nécessaires ou prix incomplet) : ' + nonCalc.join(', ') + '.');
-    notes.push('Les offres avec promotion coûteront plus cher à partir de la 2e année.');
-    $('cl-notes').textContent = notes.join(' ');
+    var hyp = [kva + ' kVA', 'heures creuses ' + Math.round(h * 100) + ' %' + (hcDonne ? '' : ' (estimé)'), 'prix TTC du ' + (PRIX.meta.mis_a_jour_le || '').split('-').reverse().join('/'), 'promo de la 1re année déduite (plus cher ensuite)', '« ~ » : estimation Tempo, week-end, saisons' + (r.chauffage ? '' : ' (précisez le chauffage)')];
+    if (nonCalc.length) hyp.push('non calculées ici : ' + nonCalc.join(', '));
+    $('cl-hyp').textContent = hyp.join(' · ') + '.';
     sec.hidden = false;
     return true;
   }
 
+  $('cl-more').addEventListener('click', function () { classement.tout = !classement.tout; rendre(); });
   rendre();
   chargerPrix();
 
